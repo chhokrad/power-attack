@@ -1,6 +1,6 @@
 PowerAttackModel:
     'begin setup' 
-        case_file=STRING 
+        case_file=CaseFile 
         setup_configs*=ProtectionSystemSetting
     'end setup'
     'begin precondition' 
@@ -12,6 +12,10 @@ PowerAttackModel:
     
 ;
 
+CaseFile:
+    'case_file' case_file=STRING
+;
+
 Attack_scenario:
     attack_sequence+=Attack
 ;
@@ -21,39 +25,15 @@ Attack:
 ;
 
 GeneratorAttack:
-    source=Bus_id ',' type= 'Scaling' | 'Biasing'
-;
-
-Scaling:
-    'Scaling' 
-;
-
-Biasing:
-    'Biasing'
+    'Gen' source=Bus_id ',' type= 'Scaling' | 'Biasing'
 ;
 
 RelayAttack:
-    source=ProtectionSystem_id ',' type= MISSED | SPURIOUS
-;
-
-MISSED:
-    'MISSED'
-;
-
-SPURIOUS:
-    'SPURIOUS'
+    'Relay' source=ProtectionSystem_id ',' type= 'Missed' | 'Spurious'
 ;
 
 BreakerAttack:
-    source=ProtectionSystem_id ',' type= STUCK_OPEN | STUCK_CLOSE
-;
-
-STUCK_CLOSE:
-    'STUCK_CLOSE'
-;
-
-STUCK_OPEN:
-    'STUCK_OPEN'
+    'Breaker' source=ProtectionSystem_id ',' type= 'Stuck_open' | 'Stuck_close'
 ;
 
 Precondition_configs:
@@ -81,7 +61,7 @@ FaultSetting:
 ;
 
 LoadSetting:
-    'load' bus=Bus_id ',' value=FLOAT
+    'Load' bus=Bus_id ',' value=FLOAT
 ;
 
 Bus_id:

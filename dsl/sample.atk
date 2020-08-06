@@ -1,0 +1,14 @@
+begin setup
+    case_file /Users/ajaychhokra/projects/power-attack
+end setup
+
+begin precondition
+    Load 1, 89
+    Load 10, 98
+    Load 67, 56
+end precondition
+
+begin attack_scenarios
+    Gen 2, Scaling, 7.8, gaussian, 89 
+    Relay 3, 5, Missed, 90
+end attack_scenarios
