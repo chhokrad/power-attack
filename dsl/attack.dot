@@ -11,96 +11,81 @@
     edge[dir=black,arrowtail=empty]
 
 
-140382035373680[ label="{PowerAttackModel|case_file: STRING\l}"]
+140587700818048[ label="{PowerAttackModel|}"]
 
-140382035468768[ label="{Attack_scenario|}"]
+140587700833136[ label="{CaseFile|case_file: STRING\l}"]
 
-140382035471600[ label="{Attack|}"]
+140587700836544[ label="{Attack_scenario|}"]
 
-140382035446336[ label="{GeneratorAttack|type: STRING\l}"]
+140587700839952[ label="{Attack|}"]
 
-140382035478560[ label="{RelayAttack|type: MISSED\l}"]
+140587700843360[ label="{GeneratorAttack|type: STRING\l}"]
 
-140382035487056[ label="{BreakerAttack|type: STUCK_OPEN\l}"]
+140587700846768[ label="{RelayAttack|type: STRING\l}"]
 
-140382035480448[ label="{*Precondition_configs|}"]
+140587700850176[ label="{BreakerAttack|type: STRING\l}"]
 
-140382035372736[ label="{TripSetting|}"]
+140587700853584[ label="{*Precondition_configs|}"]
 
-140382035493664[ label="{*Time|}"]
+140587700856992[ label="{TripSetting|}"]
 
-140382035497072[ label="{Random|distribution: Distribution\lparams: list[FLOAT]\l}"]
+140587700860400[ label="{*Time|}"]
 
-140382035503888[ label="{FaultSetting|}"]
+140587700863808[ label="{Random|distribution: Distribution\lparams: list[FLOAT]\l}"]
 
-140382035507296[ label="{LoadSetting|value: FLOAT\l}"]
+140587700842416[ label="{FaultSetting|}"]
 
-140382035510704[ label="{Bus_id|index: INT\l}"]
+140587700823008[ label="{LoadSetting|value: FLOAT\l}"]
 
-140382035514112[ label="{*ProtectionSystemSetting|}"]
+140587700868368[ label="{Bus_id|index: INT\l}"]
 
-140382035517520[ label="{BreakerSetting|tto: FLOAT\lttc: FLOAT\l}"]
+140587700871776[ label="{*ProtectionSystemSetting|}"]
 
-140382035520928[ label="{ProtectionSystem_id|}"]
+140587700875184[ label="{BreakerSetting|tto: FLOAT\lttc: FLOAT\l}"]
 
-140382035523760[ label="{RelaySetting|}"]
+140587700878592[ label="{ProtectionSystem_id|}"]
 
-140382035527168[ label="{*Relay|}"]
+140587700882000[ label="{RelaySetting|}"]
 
-140382035530576[ label="{Overcurrent|wait: FLOAT\l}"]
+140587700885408[ label="{*Relay|}"]
 
-140382035522816[ label="{Distance|z2wt: FLOAT\lz3wt: FLOAT\l}"]
+140587700888816[ label="{Overcurrent|wait: FLOAT\l}"]
+
+140587700892224[ label="{Distance|z2wt: FLOAT\lz3wt: FLOAT\l}"]
 
 
 
-140382035373680 -> 140382035514112[arrowtail=diamond, dir=both, headlabel="setup_configs 0..*"]
-140382035373680 -> 140382035480448[arrowtail=diamond, dir=both, headlabel="precondition 0..*"]
-140382035373680 -> 140382035468768[arrowtail=diamond, dir=both, headlabel="attack_scenarios 1..*"]
-140382035468768 -> 140382035471600[arrowtail=diamond, dir=both, headlabel="attack_sequence 1..*"]
-140382035471600 -> 140382035493664[arrowtail=diamond, dir=both, headlabel="time "]
-140382035446336 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="source "]
-140382035478560 -> 140382035520928[arrowtail=diamond, dir=both, headlabel="source "]
-140382035487056 -> 140382035520928[arrowtail=diamond, dir=both, headlabel="source "]
-140382035480448 -> 140382035507296 [dir=back]
-140382035480448 -> 140382035372736 [dir=back]
-140382035480448 -> 140382035503888 [dir=back]
-140382035372736 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="from_bus "]
-140382035372736 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="to_bus "]
-140382035372736 -> 140382035493664[arrowtail=diamond, dir=both, headlabel="time "]
-140382035493664 -> 140382035497072 [dir=back]
-140382035503888 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="bus_id "]
-140382035503888 -> 140382035493664[arrowtail=diamond, dir=both, headlabel="time "]
-140382035507296 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="bus "]
-140382035514112 -> 140382035517520 [dir=back]
-140382035514112 -> 140382035523760 [dir=back]
-140382035517520 -> 140382035520928[arrowtail=diamond, dir=both, headlabel="id "]
-140382035520928 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="from_bus "]
-140382035520928 -> 140382035510704[arrowtail=diamond, dir=both, headlabel="to_bus "]
-140382035523760 -> 140382035520928[arrowtail=diamond, dir=both, headlabel="id "]
-140382035523760 -> 140382035527168[arrowtail=diamond, dir=both, headlabel="type "]
-140382035527168 -> 140382035530576 [dir=back]
-140382035527168 -> 140382035522816 [dir=back]
+140587700818048 -> 140587700833136[arrowtail=diamond, dir=both, headlabel="case_file "]
+140587700818048 -> 140587700871776[arrowtail=diamond, dir=both, headlabel="setup_configs 0..*"]
+140587700818048 -> 140587700853584[arrowtail=diamond, dir=both, headlabel="precondition 0..*"]
+140587700818048 -> 140587700836544[arrowtail=diamond, dir=both, headlabel="attack_scenarios 1..*"]
+140587700836544 -> 140587700839952[arrowtail=diamond, dir=both, headlabel="attack_sequence 1..*"]
+140587700839952 -> 140587700860400[arrowtail=diamond, dir=both, headlabel="time "]
+140587700843360 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="source "]
+140587700846768 -> 140587700878592[arrowtail=diamond, dir=both, headlabel="source "]
+140587700850176 -> 140587700878592[arrowtail=diamond, dir=both, headlabel="source "]
+140587700853584 -> 140587700823008 [dir=back]
+140587700853584 -> 140587700856992 [dir=back]
+140587700853584 -> 140587700842416 [dir=back]
+140587700856992 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="from_bus "]
+140587700856992 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="to_bus "]
+140587700856992 -> 140587700860400[arrowtail=diamond, dir=both, headlabel="time "]
+140587700860400 -> 140587700863808 [dir=back]
+140587700842416 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="bus_id "]
+140587700842416 -> 140587700860400[arrowtail=diamond, dir=both, headlabel="time "]
+140587700823008 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="bus "]
+140587700871776 -> 140587700875184 [dir=back]
+140587700871776 -> 140587700882000 [dir=back]
+140587700875184 -> 140587700878592[arrowtail=diamond, dir=both, headlabel="id "]
+140587700878592 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="from_bus "]
+140587700878592 -> 140587700868368[arrowtail=diamond, dir=both, headlabel="to_bus "]
+140587700882000 -> 140587700878592[arrowtail=diamond, dir=both, headlabel="id "]
+140587700882000 -> 140587700885408[arrowtail=diamond, dir=both, headlabel="type "]
+140587700885408 -> 140587700888816 [dir=back]
+140587700885408 -> 140587700892224 [dir=back]
 match_rules [ shape=plaintext, label=< <table>
 	<tr>
-		<td><b>Biasing</b></td><td>Biasing</td>
-	</tr>
-	<tr>
 		<td><b>Distribution</b></td><td>gaussian|binomial|poisson</td>
-	</tr>
-	<tr>
-		<td><b>MISSED</b></td><td>MISSED</td>
-	</tr>
-	<tr>
-		<td><b>SPURIOUS</b></td><td>SPURIOUS</td>
-	</tr>
-	<tr>
-		<td><b>STUCK_CLOSE</b></td><td>STUCK_CLOSE</td>
-	</tr>
-	<tr>
-		<td><b>STUCK_OPEN</b></td><td>STUCK_OPEN</td>
-	</tr>
-	<tr>
-		<td><b>Scaling</b></td><td>Scaling</td>
 	</tr>
 </table> >]
 
