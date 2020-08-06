@@ -25,7 +25,7 @@ Attack:
 ;
 
 GeneratorAttack:
-    'Gen' source=Bus_id ',' type= 'Scaling' | 'Biasing'
+    'Gen' source=Bus_id ',' type= 'Scaling' | 'Biasing' ',' param=FLOAT
 ;
 
 RelayAttack:

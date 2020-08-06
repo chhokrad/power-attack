@@ -1,14 +1,14 @@
 begin setup
-    case_file /Users/ajaychhokra/projects/power-attack
+    case_file '/Users/ajaychhokra/projects/power-attack'
 end setup
 
 begin precondition
-    Load 1, 89
-    Load 10, 98
-    Load 67, 56
+    Load Bus 1, 89
+    Load Bus 10, 98
+    Load Bus 67, 56
 end precondition
 
-begin attack_scenarios
-    Gen 2, Scaling, 7.8, gaussian, 89 
-    Relay 3, 5, Missed, 90
-end attack_scenarios
+begin attack scenarios
+    Gen Bus 2, Scaling, 7.8, 89 
+    Relay Bus 3, Bus 5, Missed, 90
+end attack scenarios
