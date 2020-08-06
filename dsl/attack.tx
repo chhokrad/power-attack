@@ -1,0 +1,44 @@
+PowerAttackModel:
+    'begin setup' setup_configs+=Setup_configs[',']
+    'end setup'
+;
+
+Setup_configs:
+    LoadSetting | ProtectionSystemSetting
+;
+
+LoadSetting:
+    'load' bus=Bus_id ',' value=INT
+;
+
+Bus_id:
+    'Bus' index=INT
+;
+
+ProtectionSystemSetting:
+    BreakerSetting | RelaySetting
+;
+
+BreakerSetting:
+    id=ProtectionSystem_id ',' tto=INT ',' ttc=INT
+;
+
+ProtectionSystem_id:
+    from_bus=Bus_id ',' to_bus=Bus_id
+;
+
+RelaySetting:
+    id=ProtectionSystem_id ',' type=Protection_type
+;
+
+Protection_type:
+    Overcurrent | Distance 
+;
+
+Overcurrent:
+    wait=INT
+;
+
+Distance:
+    z2wt=INT ',' z3wt=INT
+;
