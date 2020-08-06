@@ -1,14 +1,87 @@
 PowerAttackModel:
-    'begin setup' setup_configs+=Setup_configs[',']
+    'begin setup' 
+        case_file=STRING 
+        setup_configs*=ProtectionSystemSetting
     'end setup'
+    'begin precondition' 
+        precondition*=Precondition_configs
+    'end precondition'
+    'begin attack scenarios'
+        attack_scenarios+=Attack_scenario
+    'end attack scenarios'
+    
 ;
 
-Setup_configs:
-    LoadSetting | ProtectionSystemSetting
+Attack_scenario:
+    attack_sequence+=Attack
+;
+
+Attack:
+    (GeneratorAttack | RelayAttack | BreakerAttack) ',' time=Time
+;
+
+GeneratorAttack:
+    source=Bus_id ',' type= 'Scaling' | 'Biasing'
+;
+
+Scaling:
+    'Scaling' 
+;
+
+Biasing:
+    'Biasing'
+;
+
+RelayAttack:
+    source=ProtectionSystem_id ',' type= MISSED | SPURIOUS
+;
+
+MISSED:
+    'MISSED'
+;
+
+SPURIOUS:
+    'SPURIOUS'
+;
+
+BreakerAttack:
+    source=ProtectionSystem_id ',' type= STUCK_OPEN | STUCK_CLOSE
+;
+
+STUCK_CLOSE:
+    'STUCK_CLOSE'
+;
+
+STUCK_OPEN:
+    'STUCK_OPEN'
+;
+
+Precondition_configs:
+    LoadSetting | TripSetting | FaultSetting
+;
+
+TripSetting:
+    'Trip' from_bus=Bus_id ',' to_bus=Bus_id ',' time=Time
+;
+
+Time:
+    FLOAT | Random
+;
+
+Random:
+    distribution=Distribution ',' params+=FLOAT
+;
+
+Distribution:
+    'gaussian' | 'binomial' | 'poisson'
+;
+
+FaultSetting:
+    'Fault' bus_id=Bus_id ',' time=Time
 ;
 
 LoadSetting:
-    'load' bus=Bus_id ',' value=INT
+    'load' bus=Bus_id ',' value=FLOAT
 ;
 
 Bus_id:
@@ -20,7 +93,7 @@ ProtectionSystemSetting:
 ;
 
 BreakerSetting:
-    id=ProtectionSystem_id ',' tto=INT ',' ttc=INT
+    id=ProtectionSystem_id ',' tto=FLOAT ',' ttc=FLOAT
 ;
 
 ProtectionSystem_id:
@@ -28,17 +101,17 @@ ProtectionSystem_id:
 ;
 
 RelaySetting:
-    id=ProtectionSystem_id ',' type=Protection_type
+    id=ProtectionSystem_id ',' type=Relay
 ;
 
-Protection_type:
-    Overcurrent | Distance 
+Relay:
+    Overcurrent | Distance
 ;
 
 Overcurrent:
-    wait=INT
+    wait=FLOAT
 ;
 
 Distance:
-    z2wt=INT ',' z3wt=INT
+    z2wt=FLOAT ',' z3wt=FLOAT
 ;
