@@ -1,7 +1,7 @@
 PowerAttackModel:
     'begin setup' 
         case_file=CaseFile 
-        setup_configs*=ProtectionSystemSetting
+        setup_configs*=Setup_config 
     'end setup'
     'begin precondition' 
         precondition*=Precondition_configs
@@ -12,86 +12,129 @@ PowerAttackModel:
     
 ;
 
+KeyValue_pair:
+    '{' key=ID ':' value=FLOAT '}'
+;
+
+Composite_key_pair:
+    '{' key=ID ':' value=Composite_type '}'
+;
+
+Composite_type:
+    FLOAT | Random | 'unknown'
+;
+
+Time:
+    'time' Composite_type
+;
+
+Random:
+    '(' 'random' distribution=distribution_type ',' params+=KeyValue_pair ')'
+;
+
+COMPLEX:
+    '(' real=Composite_type ',' imag=Composite_type ')'
+;
+
+distribution_type:
+    'gaussian' | 'binomial' | 'poisson' | 'uniform'
+;
+
 CaseFile:
-    'case_file' case_file=STRING
+    'Case_file' case_file=STRING
 ;
 
-Attack_scenario:
-    attack_sequence+=Attack
+Setup_config:
+    ProtectSystemConfig | ControllerConfig | TracerConfig
 ;
 
-Attack:
-    (GeneratorAttack | RelayAttack | BreakerAttack) ',' time=Time
+ProtectSystemConfig:
+    BreakerConfig | RelayConfig
 ;
 
-GeneratorAttack:
-    'Gen' source=Bus_id ',' type= 'Scaling' | 'Biasing' ',' param=FLOAT
+BreakerConfig:
+    'Breaker' id=Branch_type ',' tto=Composite_type ',' ttc=Composite_type
 ;
 
-RelayAttack:
-    'Relay' source=ProtectionSystem_id ',' type= 'Missed' | 'Spurious'
+RelayConfig:
+    'Relay' id=Branch_type ',' type=Relay_type ',' params+=Composite_key_pair
 ;
 
-BreakerAttack:
-    'Breaker' source=ProtectionSystem_id ',' type= 'Stuck_open' | 'Stuck_close'
+Relay_type:
+    'Over-current' | 'Distance' | 'Differential' 
+;
+
+
+Bus_type:
+    'Bus' id=Composite_type
+;
+
+Branch_type:
+    to_bus=Bus_type ',' from_bus=Bus_type
+;
+
+ControllerConfig:
+    'Agc' params+= Composite_type
+;
+
+TracerConfig:
+    'Trace' metric+=Metric_type
+;
+
+Metric_type:
+    'Bus Voltages' | 'Power Flows' | 'Islands' | 'Load-Loss'
 ;
 
 Precondition_configs:
     LoadSetting | TripSetting | FaultSetting
 ;
 
+LoadSetting:
+    'Load' id=Bus_type ',' value=Composite_type
+;
+
 TripSetting:
-    'Trip' from_bus=Bus_id ',' to_bus=Bus_id ',' time=Time
+    'Trip' id=Bus_type ',' time=Time
 ;
 
-Time:
-    FLOAT | Random
-;
-
-Random:
-    distribution=Distribution ',' params+=FLOAT
-;
-
-Distribution:
-    'gaussian' | 'binomial' | 'poisson'
-;
 
 FaultSetting:
-    'Fault' bus_id=Bus_id ',' time=Time
+    'Fault' id=Bus_type ',' time=Time
 ;
 
-LoadSetting:
-    'Load' bus=Bus_id ',' value=FLOAT
+
+Attack_scenario:
+    attack_sequence*=Attack
 ;
 
-Bus_id:
-    'Bus' index=INT
+Attack:
+    'Attack' label=ID '->' element+=Attack_type 
 ;
 
-ProtectionSystemSetting:
-    BreakerSetting | RelaySetting
+Attack_type:
+    (GeneratorAttack | RelayAttack | BreakerAttack)+ ',' time=Time
 ;
 
-BreakerSetting:
-    id=ProtectionSystem_id ',' tto=FLOAT ',' ttc=FLOAT
+GeneratorAttack:
+    'Generator' source=Bus_type ',' type= Generator_attack_type ',' factor=Composite_type
 ;
 
-ProtectionSystem_id:
-    from_bus=Bus_id ',' to_bus=Bus_id
+Generator_attack_type:
+    ('Scaling' | 'Biasing')
 ;
 
-RelaySetting:
-    id=ProtectionSystem_id ',' type=Relay
+RelayAttack:
+    'Relay' source=Branch_type ',' type=Relay_attack_type 
 ;
 
-Relay:
-    Overcurrent | Distance
+Relay_attack_type:
+    ('Missed' | 'Spurious')
 ;
 
-Overcurrent:
-    wait=FLOAT
+BreakerAttack:
+    'Breaker' source=Branch_type ',' type=Breaker_attack_type
 ;
 
-Distance:
-    z2wt=FLOAT ',' z3wt=FLOAT
+Breaker_attack_type:
+    ('Stuck_open' | 'Stuck_close')
 ;

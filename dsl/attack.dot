@@ -11,81 +11,109 @@
     edge[dir=black,arrowtail=empty]
 
 
-140341534497184[ label="{PowerAttackModel|}"]
+140506244552240[ label="{PowerAttackModel|}"]
 
-140341534493728[ label="{CaseFile|case_file: STRING\l}"]
+140506244555696[ label="{KeyValue_pair|key: ID\lvalue: FLOAT\l}"]
 
-140341534301552[ label="{Attack_scenario|}"]
+140506244558528[ label="{Composite_key_pair|key: ID\l}"]
 
-140341534341968[ label="{Attack|}"]
+140506244561360[ label="{*Composite_type|}"]
 
-140341571238944[ label="{GeneratorAttack|type: STRING\lparam: FLOAT\l}"]
+140506244564192[ label="{Random|distribution: distribution_type\l}"]
 
-140341571242016[ label="{RelayAttack|type: STRING\l}"]
+140506244567024[ label="{COMPLEX|}"]
 
-140341571244848[ label="{BreakerAttack|type: STRING\l}"]
+140506244557584[ label="{CaseFile|case_file: STRING\l}"]
 
-140341571250768[ label="{*Precondition_configs|}"]
+140506244569856[ label="{*Setup_config|}"]
 
-140341571255216[ label="{TripSetting|}"]
+140506244571744[ label="{*ProtectSystemConfig|}"]
 
-140341571258048[ label="{*Time|}"]
+140506244574576[ label="{BreakerConfig|}"]
 
-140341571260880[ label="{Random|distribution: Distribution\lparams: list[FLOAT]\l}"]
+140506244577408[ label="{RelayConfig|type: Relay_type\l}"]
 
-140341534282064[ label="{FaultSetting|}"]
+140506244583072[ label="{Bus_type|}"]
 
-140341534470208[ label="{LoadSetting|value: FLOAT\l}"]
+140506244585904[ label="{Branch_type|}"]
 
-140341571261824[ label="{Bus_id|index: INT\l}"]
+140506244588736[ label="{ControllerConfig|}"]
 
-140341571264656[ label="{*ProtectionSystemSetting|}"]
+140506244591568[ label="{TracerConfig|metric: list[Metric_type]\l}"]
 
-140341571267488[ label="{BreakerSetting|tto: FLOAT\lttc: FLOAT\l}"]
+140506244597232[ label="{*Precondition_configs|}"]
 
-140341571270320[ label="{ProtectionSystem_id|}"]
+140506244600064[ label="{LoadSetting|}"]
 
-140341571273152[ label="{RelaySetting|}"]
+140506244602896[ label="{TripSetting|}"]
 
-140341571275984[ label="{*Relay|}"]
+140506244596288[ label="{FaultSetting|}"]
 
-140341571278816[ label="{Overcurrent|wait: FLOAT\l}"]
+140506244587792[ label="{Attack_scenario|}"]
 
-140341571281648[ label="{Distance|z2wt: FLOAT\lz3wt: FLOAT\l}"]
+140506244579296[ label="{Attack|}"]
+
+140506244551296[ label="{*Attack_type|}"]
+
+140506244603840[ label="{GeneratorAttack|type: STRING\l}"]
+
+140506244606672[ label="{RelayAttack|type: STRING\l}"]
+
+140506244609504[ label="{BreakerAttack|type: STRING\l}"]
 
 
 
-140341534497184 -> 140341534493728[arrowtail=diamond, dir=both, headlabel="case_file "]
-140341534497184 -> 140341571264656[arrowtail=diamond, dir=both, headlabel="setup_configs 0..*"]
-140341534497184 -> 140341571250768[arrowtail=diamond, dir=both, headlabel="precondition 0..*"]
-140341534497184 -> 140341534301552[arrowtail=diamond, dir=both, headlabel="attack_scenarios 1..*"]
-140341534301552 -> 140341534341968[arrowtail=diamond, dir=both, headlabel="attack_sequence 1..*"]
-140341534341968 -> 140341571258048[arrowtail=diamond, dir=both, headlabel="time "]
-140341571238944 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="source "]
-140341571242016 -> 140341571270320[arrowtail=diamond, dir=both, headlabel="source "]
-140341571244848 -> 140341571270320[arrowtail=diamond, dir=both, headlabel="source "]
-140341571250768 -> 140341534470208 [dir=back]
-140341571250768 -> 140341571255216 [dir=back]
-140341571250768 -> 140341534282064 [dir=back]
-140341571255216 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="from_bus "]
-140341571255216 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="to_bus "]
-140341571255216 -> 140341571258048[arrowtail=diamond, dir=both, headlabel="time "]
-140341571258048 -> 140341571260880 [dir=back]
-140341534282064 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="bus_id "]
-140341534282064 -> 140341571258048[arrowtail=diamond, dir=both, headlabel="time "]
-140341534470208 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="bus "]
-140341571264656 -> 140341571267488 [dir=back]
-140341571264656 -> 140341571273152 [dir=back]
-140341571267488 -> 140341571270320[arrowtail=diamond, dir=both, headlabel="id "]
-140341571270320 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="from_bus "]
-140341571270320 -> 140341571261824[arrowtail=diamond, dir=both, headlabel="to_bus "]
-140341571273152 -> 140341571270320[arrowtail=diamond, dir=both, headlabel="id "]
-140341571273152 -> 140341571275984[arrowtail=diamond, dir=both, headlabel="type "]
-140341571275984 -> 140341571278816 [dir=back]
-140341571275984 -> 140341571281648 [dir=back]
+140506244552240 -> 140506244557584[arrowtail=diamond, dir=both, headlabel="case_file "]
+140506244552240 -> 140506244569856[arrowtail=diamond, dir=both, headlabel="setup_configs 0..*"]
+140506244552240 -> 140506244597232[arrowtail=diamond, dir=both, headlabel="precondition 0..*"]
+140506244552240 -> 140506244587792[arrowtail=diamond, dir=both, headlabel="attack_scenarios 1..*"]
+140506244558528 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="value "]
+140506244561360 -> 140506244564192 [dir=back]
+140506244564192 -> 140506244555696[arrowtail=diamond, dir=both, headlabel="params 1..*"]
+140506244567024 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="real "]
+140506244567024 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="imag "]
+140506244569856 -> 140506244571744 [dir=back]
+140506244569856 -> 140506244588736 [dir=back]
+140506244569856 -> 140506244591568 [dir=back]
+140506244571744 -> 140506244574576 [dir=back]
+140506244571744 -> 140506244577408 [dir=back]
+140506244574576 -> 140506244585904[arrowtail=diamond, dir=both, headlabel="id "]
+140506244574576 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="tto "]
+140506244574576 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="ttc "]
+140506244577408 -> 140506244585904[arrowtail=diamond, dir=both, headlabel="id "]
+140506244577408 -> 140506244558528[arrowtail=diamond, dir=both, headlabel="params 1..*"]
+140506244583072 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="id "]
+140506244585904 -> 140506244583072[arrowtail=diamond, dir=both, headlabel="to_bus "]
+140506244585904 -> 140506244583072[arrowtail=diamond, dir=both, headlabel="from_bus "]
+140506244588736 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="params 1..*"]
+140506244597232 -> 140506244600064 [dir=back]
+140506244597232 -> 140506244602896 [dir=back]
+140506244597232 -> 140506244596288 [dir=back]
+140506244600064 -> 140506244583072[arrowtail=diamond, dir=both, headlabel="id "]
+140506244600064 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="value "]
+140506244602896 -> 140506244583072[arrowtail=diamond, dir=both, headlabel="id "]
+140506244602896 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="time "]
+140506244596288 -> 140506244583072[arrowtail=diamond, dir=both, headlabel="id "]
+140506244596288 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="time "]
+140506244587792 -> 140506244579296[arrowtail=diamond, dir=both, headlabel="attack_sequence 1..*"]
+140506244579296 -> 140506244551296[arrowtail=diamond, dir=both, headlabel="type "]
+140506244579296 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="time "]
+140506244551296 -> 140506244603840 [dir=back]
+140506244551296 -> 140506244606672 [dir=back]
+140506244551296 -> 140506244609504 [dir=back]
+140506244603840 -> 140506244583072[arrowtail=diamond, dir=both, headlabel="source "]
+140506244603840 -> 140506244561360[arrowtail=diamond, dir=both, headlabel="factor "]
+140506244606672 -> 140506244585904[arrowtail=diamond, dir=both, headlabel="source "]
+140506244609504 -> 140506244585904[arrowtail=diamond, dir=both, headlabel="source "]
 match_rules [ shape=plaintext, label=< <table>
 	<tr>
-		<td><b>Distribution</b></td><td>gaussian|binomial|poisson</td>
+		<td><b>Metric_type</b></td><td>Bus Voltages|Power Flows|Islands</td>
+	</tr>
+	<tr>
+		<td><b>Relay_type</b></td><td>Over-current|Distance|Differential</td>
+	</tr>
+	<tr>
+		<td><b>distribution_type</b></td><td>gaussian|binomial|poisson|uniform</td>
 	</tr>
 </table> >]
 

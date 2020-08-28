@@ -1,14 +1,13 @@
 begin setup
-    case_file '/Users/ajaychhokra/projects/power-attack'
+    Case_file 'IEEE-39'
 end setup
 
 begin precondition
     Load Bus 1, 89
-    Load Bus 10, 98
-    Load Bus 67, 56
+    Fault Bus 10, time 78
 end precondition
 
 begin attack scenarios
-    Relay Bus 3, Bus 5, Missed, gaussian, 90
-    Gen Bus 1, Scaling, binomial, 89 
+    Attack exp1 ->
+    Generator Bus 1, Biasing, (random uniform, {a : 0.1}), time 78
 end attack scenarios
