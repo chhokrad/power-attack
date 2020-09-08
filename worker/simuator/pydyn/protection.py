@@ -218,29 +218,19 @@ class TimeDelayedZoneElement(TimeDelayedBranchElement):
         # TODO Implement distance relay logic
         return False
 
-class OverCurrentProtection(object):
-    pass
-
-class DistanceProtection(object):
-    def __init__(self, z1_thresh, z2_thresh, z3_thresh, z2_delay, z3_delay,
-                label, ppc, sampling_interval, to_bus, from_bus, branch_id):
+class Relay(object):
+    def __init__(self, sampling_interval):
         self.elements = []
         self.sampling_interval = sampling_interval
-        self.elements.append(InstantaneousZoneElement(label+'_Z1', ppc, 
-                                sampling_interval,to_bus, from_bus, branch_id, z1_thresh))
-        self.elements.append(TimeDelayedZoneElement(label+'_Z2', ppc, sampling_interval, 
-                                        z2_delay, to_bus, from_bus, branch_id, z2_thresh))
-        self.elements.append(TimeDelayedZoneElement(label+'_Z3', ppc, sampling_interval, 
-                                        z3_delay, to_bus, from_bus, branch_id, z3_thresh))
-    
+
     def add_connection(self, src_element_label, internal_port, external_object, dst_element_label):
         for src_element in self.elements:
             if src_element.label == src_element_label:
                 for dst_element in external_object:
                     if dst_element.label == dst_element_label:
-                        src_element_label.add_connection(internal_port, dst_element)
+                        src_element_label.add_connection(
+                            internal_port, dst_element)
                         return None
-    
     
     def step(self, vprev, events):
         next_invocation = []
@@ -255,120 +245,85 @@ class DistanceProtection(object):
         for element in self.elements:
             element.update_interfaces()
 
+class OverCurrentProtection(Relay):
+    def __init__(self, i1_thresh, i2_thresh, i3_thresh, i2_delay, i3_delay, 
+                label, ppc, sampling_interval, to_bus, from_bus, branch_id):
+        super().__init__(sampling_interval)
+        self.elements.append(InstantaneousOvercurrentElement(label+'O1', ppc, 
+                                sampling_interval, to_bus, from_bus, branch_id, i1_thresh))
+        self.elements.append(TimeDelayedOvercurrentElement(label+'O2', ppc, 
+                            sampling_interval, i2_delay, to_bus, from_bus, branch_id, i2_thresh))
+        self.elements.append(TimeDelayedOvercurrentElement(label+'O3', ppc,
+                            sampling_interval, i3_delay, to_bus, from_bus, branch_id, i3_thresh))
+
+class DistanceProtection(object):
+    def __init__(self, z1_thresh, z2_thresh, z3_thresh, z2_delay, z3_delay,
+                label, ppc, sampling_interval, to_bus, from_bus, branch_id):
+        self.elements = []
+        self.sampling_interval = sampling_interval
+        self.elements.append(InstantaneousZoneElement(label+'_Z1', ppc, 
+                                sampling_interval,to_bus, from_bus, branch_id, z1_thresh))
+        self.elements.append(TimeDelayedZoneElement(label+'_Z2', ppc, sampling_interval, 
+                                        z2_delay, to_bus, from_bus, branch_id, z2_thresh))
+        self.elements.append(TimeDelayedZoneElement(label+'_Z3', ppc, sampling_interval, 
+                                        z3_delay, to_bus, from_bus, branch_id, z3_thresh))
+    
+class OverloadProtection(Relay):
+    def __init__(self, i1_thresh, i2_thresh, i3_thresh, i1_delay, i2_delay, i3_delay,
+                 label, ppc, sampling_interval, to_bus, from_bus, branch_id):
+        super().__init__(sampling_interval)
+        self.elements.append(TimeDelayedOvercurrentElement(label+'O1', ppc,
+                                                           sampling_interval, i1_delay, to_bus, from_bus, branch_id, i1_thresh))
+        self.elements.append(TimeDelayedOvercurrentElement(label+'O2', ppc,
+                                                           sampling_interval, i2_delay, to_bus, from_bus, branch_id, i2_thresh))
+        self.elements.append(TimeDelayedOvercurrentElement(label+'O3', ppc,
+                                                           sampling_interval, i3_delay, to_bus, from_bus, branch_id, i3_thresh))
 
 class Breaker(object):
-    pass
-
-
-class OverCurrentInstantaneousElement(object):
-    def __init__(self, label, bus_to, bus_from, branch_data, branch_id, bus_data, I_max, interval):
-        self.label = label
-        self.interval = Decimal(str(interval))
-        self.I_max = I_max
-        self.bus_to_idx = bus_to
-        self.bus_from_idx = bus_from
-        self.bus_to_BaseKV = bus_data[bus_to, BASE_KV]
-        self.bus_from_BaseKV = bus_data[bus_from, BASE_KV]
-        self.R = branch_data[branch_id, BR_R] 
-        self.X = branch_data[branch_id, BR_X]
-        self.B = branch_data[branch_id, BR_B]
-        self.ports = {"CMD_OPEN": False, "CMD_CLOSE": False}
-        self.vars = {"I": None}
-        self.current_state = "IDLE"
-        self.connection = {}
-        self.interval = Decimal(str(interval))
-
-    def add_connection(self, internal_port, external_object):
-        if internal_port in self.ports.keys():
-            self.connection.update({internal_port: external_object})
-            # self.connection[internal_port] = external_port_ref
-    
-    def step(self, vprev, events):
-        print("State of the automaton {} before evalauting {}".format(
-            self.label, self.current_state))
-        if (self.current_state == "IDLE"):
-            V1 = self.bus_to_BaseKV*np.abs(vprev[self.bus_to_idx])
-            V2 = self.bus_from_BaseKV*np.abs(vprev[self.bus_from_idx])
-            Y_series = np.abs(1/ (self.R + self.X))
-            I =  (V1 - V2)* Y_series
-            if (I > self.I_max):
-                # print(I)
-                self.current_state = "TRIPPED"
-                self.ports["CMD_OPEN"] = True
-                print("State of the automaton {} after evalauting {}".format(
-                    self.label, self.current_state))
-            return self.interval
-        else :
-            print("No change in the state of automaton {}".format(self.label))
-            return self.interval
-    
-    def update_interfaces(self):
-        for internal_port in self.connection:
-            self.connection[internal_port].ports[internal_port] = self.ports[internal_port]
-
-             
-
-class Breaker(object):
-    def __init__(self, label, tto, ttc, interval, branch_id):
-        self.label = label
-        self.branch_id  = branch_id
-        self.time = Decimal(0)
-        self.tto = Decimal(str(tto))
-        self.ttc = Decimal(str(ttc))
-        self.interval = Decimal(str(interval))
+    def __init__(self, label, sampling_interval, tto, ttc, interval, branch_id):
+        self.label = label+'_BR'
+        self.branch_id = branch_id
+        self.ticks_tto = int(tto/sampling_interval)
+        self.ticks_ttc = int(ttc/sampling_interval)
+        self.tick_counter = 0
         self.current_state = "CLOSED"
-        self.ports = {"CMD_OPEN":False, "CMD_CLOSE": False}
-        self.vars = {'timer':Decimal(0)}
-        self.connection = {}
+        self.ports = {"CMD_OPEN": False, "CMD_CLOSE": False}
+        self.sampling_interval = sampling_interval
 
-    def add_connection(self, external_port, internal_port):
-        if internal_port in self.ports.keys():
-            self.connection[internal_port] = external_port
-    
     def step(self, vprev, events):
-        print("State of the automaton {} before evalauting {}".format(
-            self.label, self.current_state))
-        self.time = self.time + self.interval
-        if (self.current_state ==  "CLOSED"):
+        if (self.current_state == "CLOSED"):
             if (self.ports["CMD_OPEN"]):
                 self.ports["CMD_OPEN"] = False
                 self.current_state = "OPENING"
-                self.vars["timer"] = self.interval 
-                print("State of the automaton {} after evalauting {}".format(
-                    self.label, self.current_state))
-                return self.interval
+                self.tick_counter = 0
+
         elif (self.current_state == "OPENING"):
-            if (self.vars['timer'] >= self.tto):
+            if (self.tick_counter >= self.ticks_tto):
                 self.current_state = "OPEN"
-                self.vars["timer"] = 0
-                print("State of the automaton {} after evalauting {}".format(
-                    self.label, self.current_state))
-                # Add TRIP Event Here
-                events.event_stack.append([ self.time, "TRIP_BRANCH", self.branch_id])
-                return self.interval
-            else :
-                print("No change in the state of the automaton {}".format(self.label))
-                self.vars['timer'] =  self.vars["timer"] + self.interval
+                self.tick_counter = 0
+                events.event_stack.append(
+                    [self.time, "TRIP_BRANCH", self.branch_id])
+            else:
+                self.tick_counter += 1
+
         elif (self.current_state == "OPEN"):
             if (self.ports["CMD_CLOSE"]):
                 self.current_state = "CLOSING"
                 self.ports["CMD_CLOSE"] = False
-                print("State of the automaton {} after evalauting {}".format(
-                    self.label, self.current_state))
-                return self.interval
-        else :
-            if (self.vars["timer"] >= self.ttc):
+                self.tick_counter = 0
+        else:
+            if (self.tick_counter >= self.ticks_ttc):
                 self.current_state = "CLOSED"
-                self.vars["timer"] = 0
-                print("State of the automaton {} after evalauting {}".format(
-                    self.label, self.current_state))
-                # Add ATTACH Event Here
-                return self.interval
+                self.tick_counter = 0
+                # TODO Implement CONNECT_BUS
             else:
-                print("No change in the state of the automaton {}".format(self.label))
-                self.vars["timer"] = self.vars["timer"] + self.interval
-        return self.interval
-    
+                self.tick_counter += 1
+
+        return self.sampling_interval
+
     def update_interfaces(self):
-        for internal_port in self.connection:
-            self.connection[internal_port] = self.ports[internal_port]
+        pass
+
+    def add_connection(self):
+        pass
+
