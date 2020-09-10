@@ -146,7 +146,45 @@ class SimulatorPyDyn(object):
             new_branch_data = deepcopy(branch_data)
             branch_data[T_BUS] = new_bus_id
             new_branch_data[F_BUS] = new_bus_id
-            self.ppc['branch'] = np.vstack([ppc['branch'], new_branch_data])
+            self.ppc['branch'] = np.vstack([self.ppc['branch'], new_branch_data])
+
+    def generate_frequency_controllers(self):
+        n = self.ppc['bus'].shape[0]
+        n_gen = self.ppc['gen'].shape[0]
+
+        node_id = [str(int(x-1)) for x in self.ppc['bus'][:, 0]]
+        gen_id = [str(int(x-1)) for x in self.ppc['gen'][:, 0]]
+
+        dest_dir = default_params['temporary_directory']
+        H = default_params['H']
+        alpha = [1.0 for x in H]
+        k_consensus = [1/.16 for x in H]
+        d_droop = [.05 for x in H]
+
+        file_name_i = default_params['freq_ctr_filename']
+        signals_ctrl_gen = default_params['signals_ctrl_gen']
+        ctrl_dyn = default_params['ctrl_dyn']
+        initialization = default_params['initialization']
+        input_ctrl = default_params['input_ctrl']
+
+
+        for i in range(n_gen):
+            input_ctrl += "Omega_x = INPUT(Omega, freq_ctrlx)\n".replace('x', str(i))
+
+        for i in range(n_gen):
+            id_label = 'ID = freq_ctrl' + str(i) + '\n'
+            input_ctrl_i = input_ctrl.replace('x', str(i))
+            init = initialization.replace('d_droop', str(d_droop[i]))
+            init = init.replace('alpha', str(alpha[i]))
+            init = init.replace('k_consensus', str(k_consensus[i]))
+            sec_ctrl_i = signals_ctrl_gen.replace(
+                'x', str(i)) + input_ctrl_i + ctrl_dyn.replace('GENx', 'GEN'+str(i))
+            file_name = dest_dir + '/' + file_name_i.replace('ith', str(i))
+            with open(file_name, 'w') as f:
+                f.write(id_label)
+                f.write(header)
+                f.write(sec_ctrl_i)
+                f.write(init)
 
     def setup(self):
         simulation_parameters = self.params['simulation']
@@ -209,10 +247,13 @@ class SimulatorPyDyn(object):
         self.ps_executor = Executor(protection_devices)
 
         # Setting up frequency controller
+        self.generate_frequency_controllers(self.ppc)
 
         # Create Events file for physical events (Include precondition and attack scenarios)
 
         # Create event generator for cyber events (Include precondition and attack scenarios)
+
+        # then implement the main function
 
 
     def run(self):

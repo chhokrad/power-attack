@@ -9,5 +9,46 @@ default_params = {
 'fn' : 60,
 'speed_volt' : True,
 'iopt' : 'runge_kutta',
-'overload': {}
+'freq_ctr_filename': 'freq_ctrlith.dyn',
+    
+    'signals_ctrl_gen' : '''
+
+Pm_ref = REF()
+omega_ref = REF()
+# used for initialization
+Pm0 = INPUT(Pm,GENx)
+Pm_droop = REF()
+Omega = REF()
+
+''',
+    'ctrl_dyn': '''
+
+call_func = INT_FUNC(update_ctrl.freq)
+Omega_nom = INT(Omega_dot, K, 1)
+Omega = MULT(Omega_nom, 1)
+u = SUM(Pm_droop, Omega)
+Pm_tot = SUM(Pm_ref, u) 
+Pm = OUTPUT(Pm_tot, GENx)
+
+''',
+    'initialization' : '''
+
+##################
+# Initialisation #
+##################
+INIT
+SIGNAL = D = CONST(d_droop)
+SIGNAL = Alpha = CONST(alpha)
+SIGNAL = K = CONST(k_consensus)
+SIGNAL = Pm_ref = MULT(Pm0, 1)
+SIGNAL = omega_ref = CONST(1.0)
+
+''',
+    'input_ctrl' : '''
+# frequency in the generator
+gen = INPUT(gen, sys_matrices)
+omega = INPUT(omega,GENx)
+omega_error = SUM(omega_ref, -omega)
+# Control variables
+'''
 }
