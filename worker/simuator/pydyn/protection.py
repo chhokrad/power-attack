@@ -16,23 +16,26 @@ class InstantaneousElement(object):
         '''
         self.label = label
         self.sampling_interval = sampling_interval  # This is integer
-        self.ports = {"CMD_OPEN": False, "TRIP": False,
-                      'MISSED': False, 'SPURIOUS': False}
+        self.ports = {"CMD_OPEN": False, "TRIP_SEND": False,
+                      'MISSED': False, 'SPURIOUS': False,
+                      'TRIP_RECIEVE': False}
         self.current_state = "IDLE"
         self.to_be_updated = []
         self.port_mappings = {}
 
-    def add_connection(self, internal_port, external_element):
+    def add_connection(self, internal_port, external_element, dst_internal_port):
         '''
             Port mapping occurs between ports of same label
             intrenal_port is the source port
             and the port with the same name in external_element
-            is the destination port
+            is the destination port 
         '''
+        if dst_internal_port is None:
+            dst_internal_port = internal_port
         assert internal_port in self.ports.keys(), "Source port label not found"
-        assert internal_port in external_element.ports.keys(
+        assert dst_internal_port in external_element.ports.keys(
         ), "Destination port label not found"
-        self.port_mappings.update({internal_port: external_element})
+        self.port_mappings.update({internal_port: (external_element, dst_internal_port)})
 
     def check_condition(self, vprev):
         assert True, 'Cannot call base class'
@@ -45,18 +48,17 @@ class InstantaneousElement(object):
             if self.check_condition(vprev) or self.ports['SPURIOUS']:
                 self.current_state = "TRIPPED"
                 self.ports["CMD_OPEN"] = True
-                self.ports['TRIP'] = True
-                self.to_be_updated.extend(['CMD_OPEN', 'TRIP'])
+                self.ports['TRIP_SEND'] = True
+                self.to_be_updated.extend(['CMD_OPEN', 'TRIP_SEND'])
                 return None
             return self.sampling_interval
         else:
             return None
 
     def update_port_interfaces(self):
-        for internal_port, external_element in self.port_mappings:
-            # TODO Implement checks
-            if internal_port in self.to_be_updated:
-                external_element.ports[internal_port] = self.ports[internal_port]
+        for internal_port in self.to_be_updated:
+            dst_element, dst_internal_port = self.port_mappings[internal_port]
+            dst_element.ports[dst_internal_port] = self.ports[internal_port]
         self.to_be_updated = []
 
 class TimeDelayedElement(InstantaneousElement):
@@ -80,10 +82,11 @@ class TimeDelayedElement(InstantaneousElement):
                 return None
             return self.sampling_interval
         elif self.current_state == "WAIT":
-            if (self.ports['TRIP']) or \
+            if (self.ports['TRIP_RECIEVE']) or \
                     (self.check_condition(vprev) and self.tick_counter >= self.delay_ticks):
                 self.current_state = "TRIPPED"
                 self.ports['CMD_OPEN'] = True
+                self.ports['TRIP_RECIEVED'] = False
                 self.to_be_updated.append('CMD_OPEN')
                 self.tick_counter = 0
                 return None
@@ -94,9 +97,10 @@ class TimeDelayedElement(InstantaneousElement):
             self.tick_counter += 1
             return self.sampling_interval
         elif self.current_state == "FAULT_WAIT":
-            if self.ports['TRIP'] or self.tick_counter >= self.delay_ticks:
+            if self.ports['TRIP_RECIEVE'] or self.tick_counter >= self.delay_ticks:
                 self.current_state = "TRIPPED"
                 self.ports['CMD_OPEN'] = True
+                self.ports['TRIP_RECIEVED'] = False
                 self.to_be_updated.append('CMD_OPEN')
                 self.tick_counter = 0
                 return None
@@ -223,14 +227,16 @@ class Relay(object):
         self.elements = []
         self.sampling_interval = sampling_interval
 
-    def add_connection(self, src_element_label, internal_port, external_object, dst_element_label):
+    def add_connection(self, src_element_label, internal_port, external_object, dst_element_label, dst_internal_port):
         for src_element in self.elements:
             if src_element.label == src_element_label:
-                for dst_element in external_object:
-                    if dst_element.label == dst_element_label:
-                        src_element_label.add_connection(
-                            internal_port, dst_element)
-                        return None
+                if isinstance(external_object, Relay):
+                    for dst_element in external_object:
+                        if dst_element.label == dst_element_label:
+                            src_element_label.add_connection(
+                                internal_port, dst_element, dst_internal_port)
+                elif isinstance(external_object, Breaker):
+                    src_element_label.add_connection(internal_port, external_object, dst_internal_port)
     
     def step(self, vprev, events):
         next_invocation = []
@@ -280,7 +286,7 @@ class OverloadProtection(Relay):
                                                            sampling_interval, i3_delay, to_bus, from_bus, branch_id, i3_thresh))
 
 class Breaker(object):
-    def __init__(self, label, sampling_interval, tto, ttc, interval, branch_id):
+    def __init__(self, label, sampling_interval, tto, ttc, branch_id):
         self.label = label+'_BR'
         self.branch_id = branch_id
         self.ticks_tto = int(tto/sampling_interval)
