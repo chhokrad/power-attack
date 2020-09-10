@@ -15,6 +15,7 @@ from pypower.idx_brch import *
 from worker.simuator.pydyn.protection import DistanceProtection
 from worker.simuator.pydyn.protection import OverloadProtection
 from worker.simuator.pydyn.protection import Breaker
+from worker.simuator.pydyn.executor import Executor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,20 +23,103 @@ from worker.simuator.pydyn.paramters import default_params
 from copy import deepcopy
 import warnings
 
+
 class SimulatorPyDyn(object):
     def __init__(self, params):
         self.params = params
         self.dynopt = deepcopy(default_params)
         self.branch_pseudo_bus_map = {}
 
-    def get_distance_relay_params(self, branch_id, from_bus, to_bus):
-        pass
+    def get_distance_relay_params(self, from_bus, to_bus, branch_id):
+        params = {}
+        params['branch_id'] = branch_id
+        params['to_bus'] = to_bus
+        params['from_bus'] = from_bus
+        params['ppc'] = self.ppc
+        params['label'] = 'PA_DR_{}_{}'.format(from_bus, to_bus)
 
-    def get_overload_relay_params(self, branch_id, from_bus, to_bus):
-        pass
+        for i in [1, 2, 3]:
+            try:
+                params['z{}_thresh'.format(
+                    i)] = self.params['protection_system']['PA_DR_{}_{}'.format(
+                        from_bus, to_bus)]['z{}_thresh'.format(i)]
+            except KeyError:
+                params['z{}_thresh'.format(
+                    i)] = default_params['z{}_thresh'.format(i)]
+            if i > 1:
+                try:
+                    params['z{}_delay'.format(
+                        i)] = self.params['protection_system']['PA_DR_{}_{}'.format(
+                            from_bus, to_bus)]['z{}_delay'.format(i)]
+                except KeyError:
+                    params['z{}_delay'.format(
+                        i)] = default_params['z{}_delay'.format(i)]
+        try:
+            params['sampling_interval'] = self.params['protection_system']['PA_DR_{}_{}'.format(
+                from_bus, to_bus)]['sampling_interval']
+        except expression as identifier:
+            params['sampling_interval'] = default_params['distance_relay_sampling_interval']
 
-    def get_breaker_params(self, branch_id, from_bus, to_bus):
-        pass
+        return params
+
+    def get_overload_relay_params(self, from_bus, to_bus, branch_id):
+        params = {}
+        params['branch_id'] = branch_id
+        params['to_bus'] = to_bus
+        params['from_bus'] = from_bus
+        params['ppc'] = self.ppc
+        params['label'] = 'PA_OR_{}_{}'.format(from_bus, to_bus)
+
+        for i in [1, 2, 3]:
+            try:
+                params['o{}_thresh'.format(
+                    i)] = self.params['protection_system']['PA_OR_{}_{}'.format(
+                        from_bus, to_bus)]['o{}_thresh'.format(i)]
+            except KeyError:
+                params['o{}_thresh'.format(
+                    i)] = default_params['o{}_thresh'.format(i)]
+
+            try:
+                params['o{}_delay'.format(
+                    i)] = self.params['protection_system']['PA_OR_{}_{}'.format(
+                        from_bus, to_bus)]['o{}_delay'.format(i)]
+            except KeyError:
+                params['o{}_delay'.format(
+                    i)] = default_params['o{}_delay'.format(i)]
+        try:
+            params['sampling_interval'] = self.params['protection_system']['PA_OR_{}_{}'.format(
+                from_bus, to_bus)]['sampling_interval']
+        except expression as identifier:
+            params['sampling_interval'] = default_params['overload_relay_sampling_interval']
+
+        return params
+
+    def get_breaker_params(self, from_bus, branch_id):
+        params = {}
+        params['branch_id'] = branch_id
+        params['to_bus'] = to_bus
+        params['from_bus'] = from_bus
+        params['label'] = 'PA_BR_{}_{}'.format(from_bus, to_bus)
+
+        try:
+            params['tto'] = self.params['protection_system']['PA_BR_{}_{}'.format(
+                from_bus, to_bus)]['tto']
+        except KeyError:
+            params['tto'] = default_params['tto']
+
+        try:
+            params['ttc'] = self.params['protection_system']['PA_BR_{}_{}'.format(
+                from_bus, to_bus)]['ttc']
+        except KeyError:
+            params['ttc'] = default_params['ttc']
+
+        try:
+            params['sampling_interval'] = self.params['protection_system']['PA_BR_{}_{}'.format(
+                from_bus, to_bus)]['sampling_interval']
+        except expression as identifier:
+            params['sampling_interval'] = default_params['breaker_sampling_interval']
+
+        return params
 
     def add_pseudo_buses(self, branch_ids):
         for branch_id in branch_ids:
@@ -94,56 +178,42 @@ class SimulatorPyDyn(object):
                 to_bus = int(self.ppc['branch'][branch_id, T_BUS])
                 from_bus = int(self.ppc['branch'][branch_id, F_BUS])
                 if self.ppc['bus'][to_bus-1, BASE_KV] == self.ppc['bus'][from_bus-1, BASE_KV]:
-                    D1 = DistanceProtection(0.8, 1.25, 2, 5*0.016, 100*0.016,
-                                            "PA_DR_{}_{}".format(
-                                                from_bus, to_bus),
-                                            self.ppc, 0.01, to_bus, from_bus, branch_id)
-                    O1 = OverloadProtection(2, 5, 10, 10000*0.016, 5000*0.016, 1000*0.016,
-                                            "PA_OR_{}_{}".format(
-                                                from_bus, to_bus),
-                                            self.ppc, 0.01, to_bus, from_bus, branch_id)
-                    D2 = DistanceProtection(0.8, 1.25, 2, 5*0.016, 100*0.016,
-                                            "PA_DR_{}_{}".format(
-                                                to_bus, from_bus),
-                                            self.ppc, 0.01, from_bus, to_bus, branch_id)
-                    O2 = OverloadProtection(2, 5, 10, 10000*0.016, 5000*0.016, 1000*0.016,
-                                            "PA_OR_{}_{}".format(
-                                                to_bus, from_bus),
-                                            self.ppc, 0.01, from_bus, to_bus, branch_id)
-                    B1 = Breaker("PA_BR_{}_{}".format(from_bus, to_bus),
-                                 0.001, 5*0.016, 5*0.016, branch_id)
-                    B2 = Breaker("PA_BR_{}_{}".format(to_bus, from_bus),
-                                 0.001, 5*0.016, 5*0.016, branch_id)
-                    for i in [1, 2, 3]:
-                        D1.add_connection("PA_DR_{}_{}_Z{}".format(
-                            from_bus, to_bus, i), "CMD_OPEN", B1)
-                        O1.add_connection("PA_OR_{}_{}_O{}".format(
-                            from_bus, to_bus, i), "CMD_OPEN", B1)
-                        D2.add_connection("PA_DR_{}_{}_Z{}".format(
-                            to_bus, from_bus, i), "CMD_OPEN", B2)
-                        O2.add_connection("PA_OR_{}_{}_O{}".format(
-                            to_bus, from_bus, i), "CMD_OPEN", B2)
+                    param_d1 = self.get_distance_relay_params(from_bus, to_bus, branch_id)
+                    D1 = DistanceProtection(**param_d1)
                     
-                    D1.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND", 
-                                    D2, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
-                    D2.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND",
-                                      D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
+                    param_d2 = self.get_distance_relay_params(to_bus, from_bus, branch_id)
+                    D2 = DistanceProtection(**param_d2)
+                    
+                    param_o1 = self.get_overload_relay_params(from_bus, to_bus, branch_id)
+                    O1 = OverloadProtection(**param_o1)
+                    
+                    param_o2 = self.get_overload_relay_params(to_bus, from_bus, branch_id)
+                    O2 = OverloadProtection(**param_o2)
+                    
+                    param_b1 = self.get_breaker_params(from_bus, to_bus, branch_id)
+                    B1 = Breaker(**param_b1)
+                    
+                    param_b2 = self.get_breaker_params(to_bus, from_bus, branch_id)
+                    B2 = Breaker(**param_b2)
+                    
+                    for i in [1, 2, 3]:
+                        D1.add_connection("PA_DR_{}_{}_Z{}".format(from_bus, to_bus, i), "CMD_OPEN", B1)
+                        O1.add_connection("PA_OR_{}_{}_O{}".format(from_bus, to_bus, i), "CMD_OPEN", B1)
+                        D2.add_connection("PA_DR_{}_{}_Z{}".format(to_bus, from_bus, i), "CMD_OPEN", B2)
+                        O2.add_connection("PA_OR_{}_{}_O{}".format(to_bus, from_bus, i), "CMD_OPEN", B2)
+
+                    D1.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND",D2, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
+                    D2.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND",D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
                     protection_devices.extend([D1, D2, O1, O2, B1, B2])
-                
         
-        
-        # Update protection system with protection system parameters
-        # Parameters for breaker: tto, ttc, sampling interval
-        # Parameters for instantaneous element: threhold
-        # Parameters for timedelayed element: delay, threshold
-        # Set up frequency controller
-        # Set up recorder through sqlite
+        self.ps_executor = Executor(protection_devices)
 
-        # Precondition parameters
-        # Create an event file
+        # Setting up frequency controller
 
-        # Attack scenarios
-        # Update the event file based on attack sequence
+        # Create Events file for physical events (Include precondition and attack scenarios)
+
+        # Create event generator for cyber events (Include precondition and attack scenarios)
+
 
     def run(self):
         run_sim(self.ppc, self.elements, self.dynopt,
