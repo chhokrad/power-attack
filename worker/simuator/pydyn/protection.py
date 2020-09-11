@@ -333,3 +333,19 @@ class Breaker(object):
     def add_connection(self):
         pass
 
+class EventInjector(object):
+    def __init__(self):
+        self.ports = {}
+        self.time_to_fire = [] 
+        self.current_state = "S1"
+        self.ports_to_be_updates = []
+    def add_event(self, info):
+        pass
+    def add_connection(self, internal_port, external_element_label, external_port_label):
+        pass
+    def step(self, a, b):
+        pass
+    def update_interfaces(self):
+        pass
+
+

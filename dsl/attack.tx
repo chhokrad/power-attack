@@ -21,7 +21,7 @@ Composite_key_pair:
 ;
 
 Composite_type:
-    FLOAT | Random | 'unknown'
+    FLOAT | Random | 'all'
 ;
 
 Time:
@@ -124,7 +124,7 @@ Generator_attack_type:
 ;
 
 RelayAttack:
-    'Relay' source=Branch_type ',' type=Relay_attack_type 
+    'Relay' source=Branch_type ',' type=Relay_type ',' kind=Relay_attack_type 
 ;
 
 Relay_attack_type:
@@ -132,7 +132,7 @@ Relay_attack_type:
 ;
 
 BreakerAttack:
-    'Breaker' source=Branch_type ',' type=Breaker_attack_type
+    'Breaker' source=Branch_type ',' kind=Breaker_attack_type
 ;
 
 Breaker_attack_type:

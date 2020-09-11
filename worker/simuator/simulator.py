@@ -27,7 +27,6 @@ import warnings
 class SimulatorPyDyn(object):
     def __init__(self, params):
         self.params = params
-        self.dynopt = deepcopy(default_params)
         self.branch_pseudo_bus_map = {}
 
     def get_distance_relay_params(self, from_bus, to_bus, branch_id):
@@ -250,12 +249,36 @@ class SimulatorPyDyn(object):
         self.generate_frequency_controllers(self.ppc)
 
         # Create Events file for physical events (Include precondition and attack scenarios)
-
+        attack_sequence = []
+        if "attack scenario" in self.params.keys():
+            attack_sequence = self.params["attack_scenario"]
+        
+        # attack sequence is a sequence where each component is 
+        # an attack can be a scaling and biasing attack : Generator Attack
+        # an attack can be a SPURIOUS and MISSED detection attack on a branch : Relay Attack
+        # an attack can be a STUCK OPEN or STUCK CLOSE attack on a braker : Breaker Attack
+        generator_attack = []
+        protection_system_attack = []
+        for attack in attack_sequence:
+            if attack['type'] == "Relay" or attack['type'] == "Breaker":
+                protection_system_attack.append(attack)
+            else:
+                generator_attack.append(attack)
+        
+        if len(generator_attack) > 0:
+            # TODO create events here in Events file
+            # Ask Carlos how he implemented this
+            pass
+        
+        if len(protection_system_attack) > 0:
+            # create event generator
+            pass
         # Create event generator for cyber events (Include precondition and attack scenarios)
 
         # then implement the main function
 
 
-    def run(self):
+    def setup_and_run(self):
+        self.setup()
         run_sim(self.ppc, self.elements, self.dynopt,
                 self.events, self.tracer, self.ps_executor)
