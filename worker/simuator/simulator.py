@@ -16,6 +16,7 @@ from worker.simuator.pydyn.protection import DistanceProtection
 from worker.simuator.pydyn.protection import OverloadProtection
 from worker.simuator.pydyn.protection import Breaker
 from worker.simuator.pydyn.executor import Executor
+from worker.simuator.pydyn.protection import EventInjector
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -243,7 +244,7 @@ class SimulatorPyDyn(object):
                     D2.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND",D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
                     protection_devices.extend([D1, D2, O1, O2, B1, B2])
         
-        self.ps_executor = Executor(protection_devices)
+        
 
         # Setting up frequency controller
         self.generate_frequency_controllers(self.ppc)
@@ -266,13 +267,16 @@ class SimulatorPyDyn(object):
                 generator_attack.append(attack)
         
         if len(generator_attack) > 0:
-            # TODO create events here in Events file
-            # Ask Carlos how he implemented this
-            pass
+            # 160.0, SIGNAL, freq_ctrl0, attack_scale, 2.1
+            self.event_list.extend(generator_attack)
         
         if len(protection_system_attack) > 0:
-            # create event generator
-            pass
+            event_injector = EventInjector()
+            
+
+            protection_devices.insert(0, event_injector)
+        self.ps_executor = Executor(protection_devices)
+
         # Create event generator for cyber events (Include precondition and attack scenarios)
 
         # then implement the main function

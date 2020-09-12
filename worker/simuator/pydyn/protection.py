@@ -3,9 +3,12 @@ from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
 from pypower.idx_brch import *
 import numpy as np
 from decimal import *
+from collections import defaultdict
+import warnings
 
 getcontext().prec = 6
 
+# TODO One to many connection implementation
 
 class InstantaneousElement(object):
     def __init__(self, label, ppc, sampling_interval):
@@ -223,7 +226,8 @@ class TimeDelayedZoneElement(TimeDelayedBranchElement):
         return False
 
 class Relay(object):
-    def __init__(self, sampling_interval):
+    def __init__(self, sampling_interval, label):
+        self.label = label
         self.elements = []
         self.sampling_interval = sampling_interval
 
@@ -254,7 +258,7 @@ class Relay(object):
 class OverCurrentProtection(Relay):
     def __init__(self, i1_thresh, i2_thresh, i3_thresh, i2_delay, i3_delay, 
                 label, ppc, sampling_interval, to_bus, from_bus, branch_id):
-        super().__init__(sampling_interval)
+        super().__init__(sampling_interval, label)
         self.elements.append(InstantaneousOvercurrentElement(label+'O1', ppc, 
                                 sampling_interval, to_bus, from_bus, branch_id, i1_thresh))
         self.elements.append(TimeDelayedOvercurrentElement(label+'O2', ppc, 
@@ -262,11 +266,10 @@ class OverCurrentProtection(Relay):
         self.elements.append(TimeDelayedOvercurrentElement(label+'O3', ppc,
                             sampling_interval, i3_delay, to_bus, from_bus, branch_id, i3_thresh))
 
-class DistanceProtection(object):
+class DistanceProtection(Relay):
     def __init__(self, z1_thresh, z2_thresh, z3_thresh, z2_delay, z3_delay,
                 label, ppc, sampling_interval, to_bus, from_bus, branch_id):
-        self.elements = []
-        self.sampling_interval = sampling_interval
+        super().__init__(sampling_interval, label)
         self.elements.append(InstantaneousZoneElement(label+'_Z1', ppc, 
                                 sampling_interval,to_bus, from_bus, branch_id, z1_thresh))
         self.elements.append(TimeDelayedZoneElement(label+'_Z2', ppc, sampling_interval, 
@@ -277,7 +280,7 @@ class DistanceProtection(object):
 class OverloadProtection(Relay):
     def __init__(self, i1_thresh, i2_thresh, i3_thresh, i1_delay, i2_delay, i3_delay,
                  label, ppc, sampling_interval, to_bus, from_bus, branch_id):
-        super().__init__(sampling_interval)
+        super().__init__(sampling_interval, label)
         self.elements.append(TimeDelayedOvercurrentElement(label+'O1', ppc,
                                                            sampling_interval, i1_delay, to_bus, from_bus, branch_id, i1_thresh))
         self.elements.append(TimeDelayedOvercurrentElement(label+'O2', ppc,
@@ -336,13 +339,56 @@ class Breaker(object):
 class EventInjector(object):
     def __init__(self):
         self.ports = {}
-        self.time_to_fire = [] 
+        self.port_mappings = defaultdict(list)
+        self.ticks_to_fire = []
         self.current_state = "S1"
-        self.ports_to_be_updates = []
-    def add_event(self, info):
-        pass
-    def add_connection(self, internal_port, external_element_label, external_port_label):
-        pass
+        self.ports_to_be_updated = []
+        
+    
+    def add_events(self, list_of_events, protection_devices, simulation_step):
+        device_dict = {device.label :  device for device in protection_devices}
+        list_of_events = sorted(list_to_be_sorted, key=lambda k: k['time'])
+        previous_time = 0
+        counter = 1
+        for event in list_of_events:
+            self.ticks_to_fire.append(ticks)
+            device_label = event['value']['label']
+            kind = event['value']['kind']
+            port_label = label + '_{}'.format(kind)
+            self.ports.update({ port_label: False})
+            self.add_connection(port_label, device_dict['label'], kind)
+            delta_time = event['time'] - previous_time
+            if delta_time > 0 :
+                ticks = int(delta_time/simulation_step)
+                self.ticks_to_fire.append(ticks)
+                self.ports_to_be_updated.append([port_label])
+            elif delta_time == 0:
+                self.ports_to_be_updated[-1].append(port_label)
+            else:
+                warnings.warn("delta cannot be negative")
+            
+
+            
+            # time, type, value
+            # time, Relay, Relay label, Fault Type
+            # time, Breaker, Breaker label, Fault Type
+            
+    def add_connection(self, internal_port, external_device, dst_internal_port):
+        # This is a one to many connection 
+        # from protection the connection will flow to all elements with the dst_internal port
+        if isinstance(external_device, InstantaneousElement) or \
+            isinstance(external_device, Breaker):
+            if dst_internal_label in external_device.ports.keys():
+                self.port_mappings[internal_port].append(external_device)
+
+        elif isinstance(external_device, Relay):
+            for element in external_device.elements:
+                if dst_internal_port in element.ports.keys():
+                    self.port_mappings[internal_port].append(element)
+
+        else:
+            warnings.warn("Cannot identify the type of the external_device")
+
     def step(self, a, b):
         pass
     def update_interfaces(self):
