@@ -23,11 +23,13 @@ import numpy as np
 from worker.simuator.pydyn.paramters import default_params
 from copy import deepcopy
 import warnings
+import os
 
 
 class SimulatorPyDyn(object):
     def __init__(self, params):
         self.params = params
+        self.dynopt = {}
         self.branch_pseudo_bus_map = {}
 
     def get_distance_relay_params(self, from_bus, to_bus, branch_id):
@@ -146,7 +148,8 @@ class SimulatorPyDyn(object):
             new_branch_data = deepcopy(branch_data)
             branch_data[T_BUS] = new_bus_id
             new_branch_data[F_BUS] = new_bus_id
-            self.ppc['branch'] = np.vstack([self.ppc['branch'], new_branch_data])
+            self.ppc['branch'] = np.vstack(
+                [self.ppc['branch'], new_branch_data])
 
     def generate_frequency_controllers(self):
         n = self.ppc['bus'].shape[0]
@@ -167,9 +170,9 @@ class SimulatorPyDyn(object):
         initialization = default_params['initialization']
         input_ctrl = default_params['input_ctrl']
 
-
         for i in range(n_gen):
-            input_ctrl += "Omega_x = INPUT(Omega, freq_ctrlx)\n".replace('x', str(i))
+            input_ctrl += "Omega_x = INPUT(Omega, freq_ctrlx)\n".replace(
+                'x', str(i))
 
         for i in range(n_gen):
             id_label = 'ID = freq_ctrl' + str(i) + '\n'
@@ -179,7 +182,9 @@ class SimulatorPyDyn(object):
             init = init.replace('k_consensus', str(k_consensus[i]))
             sec_ctrl_i = signals_ctrl_gen.replace(
                 'x', str(i)) + input_ctrl_i + ctrl_dyn.replace('GENx', 'GEN'+str(i))
-            file_name = dest_dir + '/' + file_name_i.replace('ith', str(i))
+            file_name = os.path.join(
+                dest_dir, file_name_i.replace('ith', str(i)))
+            # file_name = dest_dir + '/' + file_name_i.replace('ith', str(i))
             with open(file_name, 'w') as f:
                 f.write(id_label)
                 f.write(header)
@@ -187,15 +192,17 @@ class SimulatorPyDyn(object):
                 f.write(init)
 
     def setup(self):
-        simulation_parameters = self.params['simulation']
-        for param in simulation_parameters:
-            if param in self.dynopt.keys():
+        simulation_parameters = self.params['dynamic_simulation_parameters'] 
+        for param in default_params['dynamic_simulation_parameters']:
+            if param in simulation_parameters:
                 self.dynopt[param] = simulation_parameters[param]
             else:
-                warnings.warn("Ignoring parameter {}".format(param))
-
+                self.dynopt[param] = default_params['dynamic_simulation_parameters'][param]
+        
         # Configuration parameters
         self.ppc = loadcase(self.dynopt['case'])
+        # Setting up frequency controllers
+        self.generate_frequency_controllers(self.ppc)
         # Store preconditions in a list
         self.event_list = self.params['precondition']
         # precondition key's value is a list  where each elememt is a dictionary
@@ -216,45 +223,52 @@ class SimulatorPyDyn(object):
                 to_bus = int(self.ppc['branch'][branch_id, T_BUS])
                 from_bus = int(self.ppc['branch'][branch_id, F_BUS])
                 if self.ppc['bus'][to_bus-1, BASE_KV] == self.ppc['bus'][from_bus-1, BASE_KV]:
-                    param_d1 = self.get_distance_relay_params(from_bus, to_bus, branch_id)
+                    param_d1 = self.get_distance_relay_params(
+                        from_bus, to_bus, branch_id)
                     D1 = DistanceProtection(**param_d1)
-                    
-                    param_d2 = self.get_distance_relay_params(to_bus, from_bus, branch_id)
+
+                    param_d2 = self.get_distance_relay_params(
+                        to_bus, from_bus, branch_id)
                     D2 = DistanceProtection(**param_d2)
-                    
-                    param_o1 = self.get_overload_relay_params(from_bus, to_bus, branch_id)
+
+                    param_o1 = self.get_overload_relay_params(
+                        from_bus, to_bus, branch_id)
                     O1 = OverloadProtection(**param_o1)
-                    
-                    param_o2 = self.get_overload_relay_params(to_bus, from_bus, branch_id)
+
+                    param_o2 = self.get_overload_relay_params(
+                        to_bus, from_bus, branch_id)
                     O2 = OverloadProtection(**param_o2)
-                    
-                    param_b1 = self.get_breaker_params(from_bus, to_bus, branch_id)
+
+                    param_b1 = self.get_breaker_params(
+                        from_bus, to_bus, branch_id)
                     B1 = Breaker(**param_b1)
-                    
-                    param_b2 = self.get_breaker_params(to_bus, from_bus, branch_id)
+
+                    param_b2 = self.get_breaker_params(
+                        to_bus, from_bus, branch_id)
                     B2 = Breaker(**param_b2)
-                    
+
                     for i in [1, 2, 3]:
-                        D1.add_connection("PA_DR_{}_{}_Z{}".format(from_bus, to_bus, i), "CMD_OPEN", B1)
-                        O1.add_connection("PA_OR_{}_{}_O{}".format(from_bus, to_bus, i), "CMD_OPEN", B1)
-                        D2.add_connection("PA_DR_{}_{}_Z{}".format(to_bus, from_bus, i), "CMD_OPEN", B2)
-                        O2.add_connection("PA_OR_{}_{}_O{}".format(to_bus, from_bus, i), "CMD_OPEN", B2)
+                        D1.add_connection("PA_DR_{}_{}_Z{}".format(
+                            from_bus, to_bus, i), "CMD_OPEN", B1)
+                        O1.add_connection("PA_OR_{}_{}_O{}".format(
+                            from_bus, to_bus, i), "CMD_OPEN", B1)
+                        D2.add_connection("PA_DR_{}_{}_Z{}".format(
+                            to_bus, from_bus, i), "CMD_OPEN", B2)
+                        O2.add_connection("PA_OR_{}_{}_O{}".format(
+                            to_bus, from_bus, i), "CMD_OPEN", B2)
 
-                    D1.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND",D2, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
-                    D2.add_connection("PA_DR_{}_{}_Z1", "TRIP_SEND",D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
+                    D1.add_connection(
+                        "PA_DR_{}_{}_Z1", "TRIP_SEND", D2, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
+                    D2.add_connection(
+                        "PA_DR_{}_{}_Z1", "TRIP_SEND", D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
                     protection_devices.extend([D1, D2, O1, O2, B1, B2])
-        
-        
-
-        # Setting up frequency controller
-        self.generate_frequency_controllers(self.ppc)
 
         # Create Events file for physical events (Include precondition and attack scenarios)
         attack_sequence = []
         if "attack scenario" in self.params.keys():
             attack_sequence = self.params["attack_scenario"]
-        
-        # attack sequence is a sequence where each component is 
+
+        # attack sequence is a sequence where each component is
         # an attack can be a scaling and biasing attack : Generator Attack
         # an attack can be a SPURIOUS and MISSED detection attack on a branch : Relay Attack
         # an attack can be a STUCK OPEN or STUCK CLOSE attack on a braker : Breaker Attack
@@ -265,21 +279,87 @@ class SimulatorPyDyn(object):
                 protection_system_attack.append(attack)
             else:
                 generator_attack.append(attack)
-        
+
         if len(generator_attack) > 0:
-            # 160.0, SIGNAL, freq_ctrl0, attack_scale, 2.1
             self.event_list.extend(generator_attack)
-        
+
         if len(protection_system_attack) > 0:
             event_injector = EventInjector()
-            
-
+            event_injector.add_events(
+                protection_system_attack, protection_devices, self.dynopt['h'])
             protection_devices.insert(0, event_injector)
+
         self.ps_executor = Executor(protection_devices)
 
-        # Create event generator for cyber events (Include precondition and attack scenarios)
+        # Create event file for physical events
+        # Only supported events here are LOAD, FAULT, SIGNAL
+        # event list with time
+        self.event_list = sorted(self.event_list, key=lambda k: k['time'])
+        dest_dir = default_params['temporary_directory']
+        event_file = os.path.join(dest_dir, 'event.evnt')
+        with open(event_file, 'w') as eventfile:
+            for event in self.event_list:
+                if event["type"] == "LOAD":
+                    # 1.0, LOAD, 0, 80, 30
+                    eventfile.write("{}, LOAD, {}, {}, {}".format(event["time"],
+                                                                  event["value"]["bus"],
+                                                                  event["value"]["Pd"],
+                                                                  event["value"]["Qd"]))
+                elif event["type"] == "FAULT":
+                    #1.0, FAULT, 16, 0.5, 0.5
+                    # TODO Need better internal numbering mechanism
+                    bus = self.branch_pseudo_bus_map[event["value"]
+                                                     ["branch"]] - 1
+                    eventfile.write("{}, FAULT, {}, {}, {}".format(event["time"],
+                                                                   bus, 0, 0))
 
-        # then implement the main function
+                elif event["type"] == "SCALE":
+                    # 160.0, SIGNAL, freq_ctrl0, attack_bias, 0.01
+                    n_gen = self.ppc['gen'].shape[0]
+                    gen_no = None
+                    for n in range(n_gen):
+                        if self.ppc['gen'][n, 0] == event["value"]["bus"]:
+                            n_gen = n
+                            break
+                    if n_gen is not None:
+                        eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_scale, {}".format(
+                            event["time"],
+                            gen_no,
+                            event["value"]
+                        ))
+
+                elif event["type"] == "BIAS":
+                    n_gen = self.ppc['gen'].shape[0]
+                    gen_no = None
+                    for n in range(n_gen):
+                        if self.ppc['gen'][n, 0] == event["value"]["bus"]:
+                            n_gen = n
+                            break
+                    if n_gen is not None:
+                        eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_bias, {}".format(
+                            event["time"],
+                            gen_no,
+                            event["value"]
+                        ))
+
+                else:
+                    warnings.warn(
+                        "Event {} not supported as of now".format(event["type"]))
+
+            eventfile.close()
+
+        self.elements = {}
+        for i in range(n_gen):
+            #G_i = sym_order6b('Generator'+ str(i) +'.mach', dynopt)
+            G_i = ext_grid('GEN'+str(i), i, 0.1198, H[i], self.dynopt)
+            self.elements[G_i.id] = G_i
+            freq_ctrl_i = controller('freq_ctrl' + str(i) + '.dyn', self.dynopt)
+            self.elements[freq_ctrl_i.id] = freq_ctrl_i
+
+        # TODO correct path to sync.dyn
+        sync1 = controller('sync.dyn', dynopt)
+        self.elements[sync1.id] = sync1
+        self.events = events(event_file)
 
 
     def setup_and_run(self):

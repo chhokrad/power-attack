@@ -1,5 +1,6 @@
 import warnings
 from decimal import *
+from worker.simuator.pydyn.protection import EventInjector
 getcontext().prec = 6
 
 class Executor(object):
@@ -22,6 +23,12 @@ class Executor(object):
                 pass
         for a in missed_execution:
             warnings.warn("Missed Execution step for automaton {}, and thus suspending further operation".format(a))
+        # Moving EventInjector in front
+        index = [i for i, val in enumerate(to_be_executed)if isinstance(val, EventInjector)]
+        if len(index) > 0:
+            injector = to_be_executed.pop(index[0])
+            to_be_executed.insert(0, injector)
+        
         for a in to_be_executed:
             self.next_invocation[a] = self.t + self.automata[a].step(vprev, events)
         for a in to_be_executed:

@@ -341,15 +341,13 @@ class EventInjector(object):
         self.ports = {}
         self.port_mappings = defaultdict(list)
         self.ticks_to_fire = []
-        self.current_state = "S1"
-        self.ports_to_be_updated = []
+        self.ports_to_be_updated = [[]]
         
     
     def add_events(self, list_of_events, protection_devices, simulation_step):
         device_dict = {device.label :  device for device in protection_devices}
         list_of_events = sorted(list_to_be_sorted, key=lambda k: k['time'])
         previous_time = 0
-        counter = 1
         for event in list_of_events:
             self.ticks_to_fire.append(ticks)
             device_label = event['value']['label']
@@ -367,30 +365,32 @@ class EventInjector(object):
             else:
                 warnings.warn("delta cannot be negative")
             
-
-            
-            # time, type, value
-            # time, Relay, Relay label, Fault Type
-            # time, Breaker, Breaker label, Fault Type
-            
     def add_connection(self, internal_port, external_device, dst_internal_port):
         # This is a one to many connection 
         # from protection the connection will flow to all elements with the dst_internal port
         if isinstance(external_device, InstantaneousElement) or \
             isinstance(external_device, Breaker):
             if dst_internal_label in external_device.ports.keys():
-                self.port_mappings[internal_port].append(external_device)
+                self.port_mappings[internal_port].append([external_device, dst_internal_port])
 
         elif isinstance(external_device, Relay):
             for element in external_device.elements:
                 if dst_internal_port in element.ports.keys():
-                    self.port_mappings[internal_port].append(element)
+                    self.port_mappings[internal_port].append([external_device, dst_internal_port])
 
         else:
             warnings.warn("Cannot identify the type of the external_device")
 
     def step(self, a, b):
-        pass
+        ports = self.ports_to_be_updated.pop(0)
+        for port in ports:
+            for element_port_pair in self.port_mappings[port]:
+                element_port_pair[0].ports[element_port_pair[1]] = True 
+        if len(self.ticks_to_fire) > 0:
+            return self.ticks_to_fire.pop(0)
+        else:
+            return None
+
     def update_interfaces(self):
         pass
 
