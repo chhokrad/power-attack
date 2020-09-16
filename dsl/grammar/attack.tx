@@ -4,7 +4,7 @@ PowerAttackModel:
         setup_configs*=Setup_config[','] 
     'End setup phase'
     ('Begin preconditions' 
-        precondition*=Precondition_config[',']
+        preconditions*=Precondition_config[',']
     'End preconditions')?
     ('Begin attack scenarios'
         attack_scenarios+=Attack_scenario[',']
@@ -40,7 +40,7 @@ Value:
 ;
 
 Pair:
-    (key=Value ':' val=Value)
+    (key=STRING ':' val=Value)
 ;
 
 Time:
@@ -53,11 +53,7 @@ Case_file:
 ;
 
 Setup_config:
-    'Setup ' (Protection_system_config | Controller_config | Tracer_config | Simulator_config | Generator_config)
-;
-
-Protection_system_config:
-    (Breaker_config | Relay_config)
+    'Setup ' (Breaker_config | Relay_config | Controller_config | Tracer_config | Simulator_config | Generator_config)
 ;
 
 Breaker_config:
@@ -71,7 +67,6 @@ Relay_config:
 Relay_type:
     ('over-current' | 'distance' ) 
 ;
-
 
 Bus_type:
     'bus ' id=Scalar
@@ -90,11 +85,11 @@ Tracer_config:
 ;
 
 Metric_type:
-    'bus voltages' | 'power flows' | 'islands' | 'load-loss' | 'generator frequency'
+    ('bus voltages' | 'power flows' | 'islands' | 'load-loss' | 'generator frequency')
 ;
 
 Simulator_config:
-    ('step size' | 'simulation time' | 'max error' | 'max iterations' | 'frequency' | 'solver' ) 'as' val=Scalar
+    'simulation' 'with' '{' params+=Pair[','] '}'
 ;
 
 Generator_config:
@@ -102,28 +97,28 @@ Generator_config:
 ;
 
 Precondition_config:
-    (LoadSetting | TripSetting | FaultSetting) time=Time
+   (Load_change | Trip_node | Fault_injection)
 ;
 
-LoadSetting:
-    'Change load on ' id=Bus_type 'to' val=Value
+Load_change:
+    'Change load on ' id=Bus_type 'to' val=Value time=Time
 ;
 
-TripSetting:
-    'Trip' id=Node 
+Trip_node:
+    'Trip' id=Node time=Time
 ;
 
 Node:
     (Bus_type | Branch_type)
 ;
 
-FaultSetting:
-    'Inject fault in ' id=Node
+Fault_injection:
+    'Inject fault in ' id=Node time=Time
 ;
 
 
 Attack_scenario:
-    label=ID ':' '<' Attack_sequence+=Attack[','] '>' 
+    label=ID ':' '<' attack_sequence+=Attack[','] '>' 
 ;
 
 Attack:

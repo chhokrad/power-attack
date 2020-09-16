@@ -1,7 +1,9 @@
-class Interpreter(object):
-    def __init__(self):
-        pass
+import requests
+import argparse
 
-class Sampler(object):
-    def __init__(self):
-        pass
+
+def main():
+    pass
+
+if __name__ == "__main__":
+    pass

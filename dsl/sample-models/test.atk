@@ -5,8 +5,7 @@ Begin setup phase
     Setup over-current relay @ branch between bus 11 and bus 23 with { 'o1_thresh' : 34.45 , '02_thresh' : 45.78 },
     Setup lfc in generator @ bus 1 with { 'max_droop' : 78.98 },
     Setup generator @ bus 12 with {'inertia' : 90.98, 'reactance' : 89},
-    Setup step size as 1,
-    Setup simulation time as (Discrete-Gaussian, { 'mue' : 78, 'sigma' : 5} ),
+    Setup simulation with { 'time' : (Discrete-Gaussian, { 'mue' : 78, 'sigma' : 5}), 'max iterations' : 90 } ,
     Setup trace of bus voltages, power flows, load-loss
 End setup phase
 
