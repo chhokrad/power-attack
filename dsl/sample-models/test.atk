@@ -1,0 +1,10 @@
+begin setup
+    Case : '/Users/ajaychhokra/projects/power-attack/dsl/sample-models/case.39.py'
+    Setup Breaker @ Branch between Bus 109 and Bus 11 with { 'tto' : (Uniform, {'mue':10, 'sigma':1}) }, 
+    Setup Distance Relay @ Branch between Bus 10 and Bus 11 with { 'z1_thresh' : (1, 100)},
+    Setup Over-current Relay @ Branch between Bus 11 and Bus 23 with { 'o1_thresh' : 34.45 , '02_thresh' : 45.78 },
+    Setup Lfc in generator @ Bus 1 with { 'max_droop' : 78.98 },
+    Setup Generator @ Bus 12 with {'inertia' : 90.98, 'reactance' : 89},
+    Setup Step size as 1,
+    Setup Simulation time as (Discrete-Gaussian, { 'mue' : 78, 'sigma' : 5} )
+end setup
