@@ -1,18 +1,18 @@
 PowerAttackModel:
-    'begin setup' 
+    'Begin setup phase' 
         case_file=Case_file 
-        setup_configs*=Setup_config[';'] 
-    'end setup'
-    ('begin precondition' 
-        precondition*=Precondition_config[';']
-    'end precondition')*
-    ('begin attack scenarios'
-        attack_scenarios+=Attack_scenario[';']
-    'end attack scenarios')*
+        setup_configs*=Setup_config[','] 
+    'End setup phase'
+    ('Begin preconditions' 
+        precondition*=Precondition_config[',']
+    'End preconditions')?
+    ('Begin attack scenarios'
+        attack_scenarios+=Attack_scenario[',']
+    'End attack scenarios')?
     
 ;
 Deterministic_scalar:
-    (INT | FLOAT | STRING)
+    (NUMBER | FLOAT | STRING)
 ;
 
 Primitive_pair:
@@ -20,11 +20,11 @@ Primitive_pair:
 ;
 
 Probablistic_scalar:
-    '( random' distribution=Distribution_type ',' '{' params+=Primitive_pair[','] '}' ')'
+    '(' distribution=Distribution_type ',' '{' params+=Primitive_pair[','] '}' ')'
 ;
 
 Distribution_type:
-    ('Uniform' | 'Uniform_discrete' | 'Gaussian' | 'Gaussian_discrete')
+    ('Uniform' | 'Discrete-Uniform' | 'Gaussian' | 'Discrete-Gaussian')
 ;
 
 Scalar:
@@ -53,7 +53,7 @@ Case_file:
 ;
 
 Setup_config:
-    'Setup ' (Protection_system_config | Controller_config | Tracer_config)
+    'Setup ' (Protection_system_config | Controller_config | Tracer_config | Simulator_config | Generator_config)
 ;
 
 Protection_system_config:
@@ -61,44 +61,52 @@ Protection_system_config:
 ;
 
 Breaker_config:
-    'Breaker @ ' id=Branch_type 'with' '{' params+=Pair[','] '}'
+    'breaker @ ' id=Branch_type 'with' '{' params+=Pair[','] '}'
 ;
 
 Relay_config:
-    'Relay @ ' id=Branch_type 'of' type=Relay_type 'with' '{' params+=Pair[','] '}'
+     type=Relay_type 'relay @ ' id=Branch_type  'with' '{' params+=Pair[','] '}'
 ;
 
 Relay_type:
-    ('Over-current' | 'Distance' | 'Differential') 
+    ('over-current' | 'distance' ) 
 ;
 
 
 Bus_type:
-    'Bus ' id=Scalar
+    'bus ' id=Scalar
 ;
 
 Branch_type:
-    'Branch between' to_bus=Bus_type ',' from_bus=Bus_type
+    'branch between' to_bus=Bus_type 'and' from_bus=Bus_type
 ;
 
 Controller_config:
-    'Lfc ' '{' params+=Pair[','] '}'
+    'lfc in generator @ ' id=Bus_type 'with' '{' params+=Pair[','] '}'
 ;
 
 Tracer_config:
-    'Trace ' metric*=Metric_type[',']
+    'trace of' metric+=Metric_type[',']
 ;
 
 Metric_type:
-    'Bus Voltages' | 'Power Flows' | 'Islands' | 'Load-Loss' | 'Generator Frequency'
+    'bus voltages' | 'power flows' | 'islands' | 'load-loss' | 'generator frequency'
+;
+
+Simulator_config:
+    ('step size' | 'simulation time' | 'max error' | 'max iterations' | 'frequency' | 'solver' ) 'as' val=Scalar
+;
+
+Generator_config:
+    'generator @ ' id=Bus_type 'with' '{' params+=Pair[','] '}'
 ;
 
 Precondition_config:
-    (LoadSetting | TripSetting | FaultSetting)
+    (LoadSetting | TripSetting | FaultSetting) time=Time
 ;
 
 LoadSetting:
-    'Set load on ' id=Bus_type 'to' val=Value
+    'Change load on ' id=Bus_type 'to' val=Value
 ;
 
 TripSetting:
@@ -110,42 +118,42 @@ Node:
 ;
 
 FaultSetting:
-    'Inject fault in ' id=Node  time=Time
+    'Inject fault in ' id=Node
 ;
 
 
 Attack_scenario:
-    label=ID ':' attack_sequence*=Attack['->']
+    label=ID ':' '<' Attack_sequence+=Attack[','] '>' 
 ;
 
 Attack:
-    element+=Attack_type[','] 
+    'Attack' element=Attack_type time=Time
 ;
 
 Attack_type:
-    'Attack' (Generator_attack | Relay_attack | Breaker_attack)  time=Time
+    (Generator_attack | Relay_attack | Breaker_attack)  
 ;
 
 Generator_attack:
-    'Lfc in Generator @ ' source=Bus_type 'with' type= Generator_attack_type 'attack' 'of' factor=Scalar
+    'lfc in generator @ ' source=Bus_type 'with' type= Generator_attack_type 'attack' 'of' factor=Scalar
 ;
 
 Generator_attack_type:
-    ('Scaling' | 'Biasing')
+    ('scaling' | 'biasing')
 ;
 
 Relay_attack:
-    type=Relay_type 'Relay @ ' source=Branch_type   'with' kind=Relay_attack_type 
+    kind=Relay_type 'relay @ ' source=Branch_type   'with' kind=Relay_attack_type 'attack'
 ;
 
 Relay_attack_type:
-    ('Missed' | 'Spurious')
+    ('missed' | 'spurious')
 ;
 
 Breaker_attack:
-    'Breaker @' source=Branch_type 'with' kind=Breaker_attack_type
+    'breaker @' source=Branch_type 'with' type=Breaker_attack_type 'attack'
 ;
 
 Breaker_attack_type:
-    ('Stuck_open' | 'Stuck_close')
+    ('stuck open' | 'stuck close')
 ;

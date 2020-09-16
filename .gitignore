@@ -132,7 +132,7 @@ dmypy.json
 .vscode
 
 # DOT files
-.dot
+*.dot
 
 # PNG files
-.png
+*.png
