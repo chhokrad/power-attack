@@ -17,6 +17,7 @@ class Interpreter(object):
         self.controller_params = {}
         self.generator_params = {}
         self.simulation_params = {}
+        self.preconditions = []
 
     def get_setup_config(self):
         for config in self.sample_model.setup_configs:
@@ -93,13 +94,45 @@ class Interpreter(object):
                 warnings.warn("Ignoring precondition type {}".format(type))
 
     def get_load_changes(self, precondition):
-        pass
+        # dict with keys time, type, value
+        # value is a dict too
+
+        event = {}
+        bus = precondition.id.id
+        event["type"] = "LOAD"
+        event["time"] = self.extract_value(precondition.time)
+        event['bus'] = bus
+        event['value'] = self.extract_value(precondition.val)
+
+        self.preconditions.append(event)
+
 
     def get_fault_injections(self, precondition):
-        pass
+        event = {}
+        event["type"] = "FAULT"
+        node_type = precondition.id.__class__.__name__
+        event['node_type'] = node_type
+        if node_type == "Branch_type":
+            event['to_bus'] = precondition.id.to_bus.id
+            event['from_bus'] = precondition.id.from_bus.id
+        elif node_type == "Bus_type":
+            event['bus'] = precondition.id.id
+        
+        self.preconditions.append(event)
     
     def get_trip_events(self, precondition):
-        pass
+        event = {}
+        event["type"] = "TRIP"
+        event['time'] = self.extract_value(precondition.time)
+        node_type = precondition.id.__class__.__name__
+        event['node_type'] = node_type
+        if node_type == "Branch_type":
+            event['to_bus'] = precondition.id.to_bus.id
+            event['from_bus'] = precondition.id.from_bus.id
+        elif node_type == "Bus_type":
+            event['bus'] = precondition.id.id
+        
+        self.preconditions.append(event)
     
     def get_attack_scenarios(self):
         for attack_scenario in self.sample_model.attack_scenarios:
@@ -179,4 +212,7 @@ if __name__ == "__main__":
     pp.pprint(power_attack_interpreter.simulation_params)
     print("-"*150)
     pp.pprint(power_attack_interpreter.generator_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.preconditions)
+
 
