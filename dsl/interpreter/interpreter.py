@@ -1,11 +1,22 @@
 from pypower import loadcase
 from textx import metamodel_from_file
 import warnings
+import pprint
 
 class Interpreter(object):
     def __init__(self, meta_model):
         # TODO check if file exists
+
+        # type of value is tuple size 2 -> scalar
+        # type of value is tuple size 3 -> p_scalar
+        # type of value is list size 2 -> vector
         self.meta_model = metamodel_from_file(meta_model)
+        self.params = {}
+        self.breaker_params = {}
+        self.relay_params = {}
+        self.controller_params = {}
+        self.generator_params = {}
+        self.simulation_params = {}
 
     def get_setup_config(self):
         for config in self.sample_model.setup_configs:
@@ -15,7 +26,7 @@ class Interpreter(object):
             elif kind == "Relay_config":
                 self.get_relay_config(config)
             elif kind == "Controller_config":
-                self.get_controller_config
+                self.get_controller_config(config)
             elif kind == "Tracer_config":
                 self.get_tracer_config(config)
             elif kind == "Generator_config":
@@ -27,22 +38,47 @@ class Interpreter(object):
     
 
     def get_breaker_config(self, config):
-        pass
-
+        from_bus = config.id.from_bus.id
+        to_bus = config.id.to_bus.id
+        label = "PA_BR_{}_{}".format(from_bus, to_bus)
+        params = self.extract_params(config.params)
+        for key in params:
+            self.breaker_params[label+"_{}".format(key)] = params[key]
+        
+        
     def get_relay_config(self, config):
-        pass
+        from_bus = config.id.from_bus.id
+        to_bus = config.id.to_bus.id
+        type = "DR" 
+        if config.type == "over-current":
+            type = "OR"
+        label = "PA_{}_{}_{}".format(type, from_bus, to_bus)
+        params = self.extract_params(config.params)
+        for key in params:
+            self.relay_params[label+"_{}".format(key)] = params[key]
 
     def get_controller_config(self, config):
-        pass
+        bus = config.id.id
+        label = "LFC_{}".format(bus)
+        params = self.extract_params(config.params)
+        for key in params:
+            self.controller_params[label+"_{}".format(key)] = params[key]
 
     def get_tracer_config(self, config):
-        pass
+        self.params['Tracer'] = config.metrics
 
     def get_generator_config(self, config):
-        pass
+        bus = config.id.id
+        label = "GEN_{}".format(bus)
+        params = self.extract_params(config.params)
+        for key in params:
+            self.generator_params[label+"_{}".format(key)] = params[key]
 
     def get_simulator_config(self, config):
-        pass
+        label = "SIM"
+        params = self.extract_params(config.params)
+        for key in params:
+            self.simulation_params[label+"_{}".format(key)] = params[key]
 
     def get_preconditions(self):
         for precondition in self.sample_model.preconditions:
@@ -71,7 +107,6 @@ class Interpreter(object):
             
     def get_attack_sequence(self, scenario):
         label = scenario.label
-        print(label)
         for attack in scenario.attack_sequence:
             self.get_attack(attack)
 
@@ -98,7 +133,28 @@ class Interpreter(object):
         return None
 
     def extract_value(self, val):
-        return None
+        # value should be a tuple ()
+        # first element is actual value, second is whether is random or not
+        # actual value can be scalar or a vector
+        # in case of scalar -> (x, false)
+        # in case of vector -> ([x,y], false)
+        # in case of random scalar -> ([dist, params], false)
+        # in case of random vector -> [(x, false), ([dist, params], true)]
+        #                          -> [([dist, params], true), ([dist, params], true)]
+        type = val.__class__.__name__
+        if type == "Probablistic_scalar":
+            return (True, [val.distribution, self.extract_params(val.params)])
+        elif type == "Vector":
+            return [self.extract_value(val.real), self.extract_value(val.imag)]
+        else:
+            return (False, val) 
+    
+    def extract_params(self, params):
+        params_dict = {}
+        for keyval in params:
+            x = keyval.key
+            params_dict[x] = self.extract_value(keyval.val)
+        return params_dict
 
     def parse_sample_model(self, sample_model):
         self.sample_model = self.meta_model.model_from_file(sample_model)
@@ -111,3 +167,16 @@ class Interpreter(object):
 if __name__ == "__main__":
     power_attack_interpreter = Interpreter(meta_model="../grammar/attack.tx")
     power_attack_interpreter.parse_sample_model(sample_model="../sample-models/test.atk")
+    pp = pprint.PrettyPrinter(depth=4)
+    pp.pprint(power_attack_interpreter.breaker_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.relay_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.controller_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.params['Tracer'])
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.simulation_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.generator_params)
+

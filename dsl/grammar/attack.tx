@@ -36,7 +36,7 @@ Vector:
 ;
 
 Value:
-    Scalar | Vector
+    (Scalar | Vector)
 ;
 
 Pair:
@@ -69,7 +69,7 @@ Relay_type:
 ;
 
 Bus_type:
-    'bus ' id=Scalar
+    'bus ' id=Deterministic_scalar
 ;
 
 Branch_type:
@@ -81,7 +81,7 @@ Controller_config:
 ;
 
 Tracer_config:
-    'trace of' metric+=Metric_type[',']
+    'trace of' metrics+=Metric_type[',']
 ;
 
 Metric_type:
