@@ -18,6 +18,7 @@ class Interpreter(object):
         self.generator_params = {}
         self.simulation_params = {}
         self.preconditions = []
+        self.attack_scenarios = {}
 
     def get_setup_config(self):
         for config in self.sample_model.setup_configs:
@@ -96,7 +97,6 @@ class Interpreter(object):
     def get_load_changes(self, precondition):
         # dict with keys time, type, value
         # value is a dict too
-
         event = {}
         bus = precondition.id.id
         event["type"] = "LOAD"
@@ -137,33 +137,55 @@ class Interpreter(object):
     def get_attack_scenarios(self):
         for attack_scenario in self.sample_model.attack_scenarios:
             self.get_attack_sequence(attack_scenario)
-            
+        
     def get_attack_sequence(self, scenario):
+        # attack sequence is a key value pair
+        # key is label and value is a list of attacks
+        # attack is a dict with type, time, val
         label = scenario.label
+        attack_sequence = []
         for attack in scenario.attack_sequence:
-            self.get_attack(attack)
+            attack_sequence.append(self.get_attack(attack))
+        self.attack_scenarios[label] = attack_sequence
 
 
     def get_attack(self, attack):
         type = attack.element.__class__.__name__
-        time = self.extract_value(attack.time)
+        event = {}
+        event['time'] = self.extract_value(attack.time)
+        element = {}
         if type == "Generator_attack":
-            self.get_generator_attack(attack.element)
+            element = self.get_generator_attack(attack.element)
         elif type == "Breaker_attack":
-            self.get_breaker_attack(attack.element)
+            element = self.get_breaker_attack(attack.element)
         elif type == "Relay_attack":
-            self.get_relay_attack(attack.element)
+            selement = self.get_relay_attack(attack.element)
         else:
             warnings.warn("Ignoring attack type {}".format(type))
+        event.update(element)
+        return event
 
-    def get_generator_attack(self, attack):
-        return None
+    def get_generator_attack(self, element):
+        event = {}
+        event['bus'] = element.id.id
+        event['type'] = element.type
+        event['factor'] = self.extract_value(element.factor)
+        return event
 
-    def get_relay_attack(self, attack):
-        return None
+    def get_relay_attack(self, element):
+        event = {}
+        event['to_bus'] = element.id.to_bus.id
+        event['from_bus'] = element.id.from_bus.id
+        event['kind'] = element.kind
+        event['type'] = element.type
+        return event
 
-    def get_breaker_attack(self, attack):
-        return None
+    def get_breaker_attack(self, element):
+        event = {}
+        event['to_bus'] = element.id.to_bus.id
+        event['from_bus'] = element.id.from_bus.id
+        event['type'] = element.type
+        return event
 
     def extract_value(self, val):
         # value should be a tuple ()
@@ -214,5 +236,7 @@ if __name__ == "__main__":
     pp.pprint(power_attack_interpreter.generator_params)
     print("-"*150)
     pp.pprint(power_attack_interpreter.preconditions)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.attack_scenarios)
 
 

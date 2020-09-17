@@ -130,7 +130,7 @@ Attack_type:
 ;
 
 Generator_attack:
-    'lfc in generator @ ' source=Bus_type 'with' type= Generator_attack_type 'attack' 'of' factor=Scalar
+    'lfc in generator @ ' id=Bus_type 'with' type= Generator_attack_type 'attack' 'of' factor=Scalar
 ;
 
 Generator_attack_type:
@@ -138,7 +138,7 @@ Generator_attack_type:
 ;
 
 Relay_attack:
-    kind=Relay_type 'relay @ ' source=Branch_type   'with' kind=Relay_attack_type 'attack'
+    kind=Relay_type 'relay @ ' id=Branch_type   'with' type=Relay_attack_type 'attack'
 ;
 
 Relay_attack_type:
@@ -146,7 +146,7 @@ Relay_attack_type:
 ;
 
 Breaker_attack:
-    'breaker @' source=Branch_type 'with' type=Breaker_attack_type 'attack'
+    'breaker @' id=Branch_type 'with' type=Breaker_attack_type 'attack'
 ;
 
 Breaker_attack_type:
