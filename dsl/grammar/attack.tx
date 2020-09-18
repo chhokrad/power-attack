@@ -24,7 +24,7 @@ Probablistic_scalar:
 ;
 
 Distribution_type:
-    ('Uniform' | 'Discrete-Uniform' | 'Gaussian' | 'Discrete-Gaussian')
+    ('Uniform' | 'Discrete-Uniform' | 'Gaussian')
 ;
 
 Scalar:
