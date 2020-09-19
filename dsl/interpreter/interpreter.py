@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 from pypower import loadcase
 from textx import metamodel_from_file
 import warnings
