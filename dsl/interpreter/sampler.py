@@ -19,6 +19,7 @@ class Sampler(object):
         self.num_samples = samples
         self.random_variables_samples = {}
         self.params_list = []
+        self.params_list_with_scenario = {}
 
     def create_space(self):
         all_deterministic = self.check_probablistic_all()
@@ -48,6 +49,31 @@ class Sampler(object):
                                             "generator": a4[i],
                                             "simulation": a5[i],
                                             "preconditions": a6[i]})
+        # TODO this is difficult to understand and should be re-factored
+        for scenario_label in self.attack_scenarios:
+            scenario = self.attack_scenarios[scenario_label]
+            flag = self.check_probablistic_list(scenario, scenario_label)
+            if flag:
+                params_list_copy = deepcopy(self.params_list)
+                for params in params_list_copy:
+                    params['sceanrio'] = scenario
+                self.params_list_with_scenario[scenario_label] = params_list_copy
+            else:
+                params_list_copy = []
+                if len(self.params_list) == 1:
+                    for i in range(self.num_samples):
+                        params_list_copy.append(deepcopy(self.params_list[0]))
+                else:
+                    params_list_copy = deepcopy(self.params_list)
+                
+                for index in range(len(params_list_copy)):
+                    scenario_copy = deepcopy(scenario)
+                    for var in self.random_variables_samples[scenario_label]:
+                        index1, key = var.split('_')
+                        scenario_copy[index1][key] = self.random_variables_samples[scenario_label][var][index]
+                    params_list_copy[index].update(scenario_copy)
+                self.params_list_with_scenario[scenario_label] = params_list_copy
+
     
     def create_breaker_param_space(self):
         space = []
@@ -130,14 +156,6 @@ class Sampler(object):
         d = self.check_probablistic_dict(self.generator_params, "generator")
         e = self.check_probablistic_dict(self.simulation_params, "simulation")
         f = self.check_probablistic_list(self.preconditions, "preconditions")
-
-        # FIXME return and logic is not correct
-        g = True
-        for scenario_label in self.attack_scenarios:
-            scenario = self.attack_scenarios[scenario_label]
-            g =  g and (self.check_probablistic_list())
-        g = self.check_probablistic_list(scenario, "scenario_{}".format(scenario_label))
-        
         return (a and b and c and d and e and f)
 
     def check_probablistic_list(self, params_list, label):
