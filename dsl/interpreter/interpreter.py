@@ -112,6 +112,7 @@ class Interpreter(object):
     def get_fault_injections(self, precondition):
         event = {}
         event["type"] = "FAULT"
+        event["time"] = self.extract_value(precondition.time)
         node_type = precondition.id.__class__.__name__
         event['node_type'] = node_type
         if node_type == "Branch_type":
@@ -221,24 +222,24 @@ class Interpreter(object):
         self.get_preconditions()
         self.get_attack_scenarios()
 
-if __name__ == "__main__":
-    power_attack_interpreter = Interpreter(meta_model="../grammar/attack.tx")
-    power_attack_interpreter.parse_sample_model(sample_model="../sample-models/test.atk")
-    pp = pprint.PrettyPrinter(depth=4)
-    pp.pprint(power_attack_interpreter.breaker_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.relay_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.controller_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.params['Tracer'])
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.simulation_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.generator_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.preconditions)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.attack_scenarios)
+# if __name__ == "__main__":
+#     power_attack_interpreter = Interpreter(meta_model="../grammar/attack.tx")
+#     power_attack_interpreter.parse_sample_model(sample_model="../sample-models/test.atk")
+#     pp = pprint.PrettyPrinter(depth=4)
+#     pp.pprint(power_attack_interpreter.breaker_params)
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.relay_params)
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.controller_params)
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.params['Tracer'])
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.simulation_params)
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.generator_params)
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.preconditions)
+#     print("-"*150)
+#     pp.pprint(power_attack_interpreter.attack_scenarios)
 
 

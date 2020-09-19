@@ -6,7 +6,7 @@ from copy import deepcopy
 
 class Sampler(object):
     def __init__(self, params, breaker_params, relay_params, 
-                controller_params, generator_params, simultation_params, 
+                controller_params, generator_params, simulation_params,
                 preconditions, attack_scenarios, num_samples=10):
         self.params = params
         self.breaker_params = breaker_params
@@ -16,7 +16,7 @@ class Sampler(object):
         self.simulation_params = simulation_params
         self.preconditions = preconditions
         self.attack_scenarios = attack_scenarios
-        self.num_samples = samples
+        self.num_samples = num_samples
         self.random_variables_samples = {}
         self.params_list = []
         self.params_list_with_scenario = {}
@@ -70,8 +70,9 @@ class Sampler(object):
                     scenario_copy = deepcopy(scenario)
                     for var in self.random_variables_samples[scenario_label]:
                         index1, key = var.split('_')
+                        index1 = int(index1)
                         scenario_copy[index1][key] = self.random_variables_samples[scenario_label][var][index]
-                    params_list_copy[index].update(scenario_copy)
+                    params_list_copy[index]["scenario"] = scenario_copy
                 self.params_list_with_scenario[scenario_label] = params_list_copy
 
     
@@ -128,7 +129,7 @@ class Sampler(object):
         if len(random_vars) > 0:
             for key in random_vars:
                 for index in range(len(space)):
-                    sapce[index][key] = random_vars[key][index]
+                    space[index][key] = random_vars[key][index]
         return space
 
     def create_preconditions_space(self):
@@ -166,31 +167,34 @@ class Sampler(object):
             element = params_list[index]
             for key in element:
                 value = element[key]
-                if type(value) == "tuple":
+                
+                if value.__class__.__name__ == "tuple":
                     # its scalar
                     if value[0]:
-                        samples = self.sample_value(value[1], value[2])
+                        samples = self.sample_value(value[1][0], value[1][1])
                         temp["{}_{}".format(index,key)] = samples
                         flag = False
-                else:
+                elif value.__class__.__name__ == "list":
                     if value[0][0] and not value[1][0]:
-                        samples = self.sample_value(value[0][1], value[0][2])
+                        samples = self.sample_value(value[0][1][0], value[0][1][1])
                         samples_ = [(k, value[1][1]) for k in samples]
                         temp["{}_{}".format(index, key)] = samples_
                         flag = False
                     elif not value[0][0] and value[1][0]:
-                        samples = self.sample_value(value[1][1], value[1][2])
+                        samples = self.sample_value(value[1][1][0], value[1][1][1])
                         samples_ = [(value[0][1], k) for k in samples]
                         temp["{}_{}".format(index, key)] = samples_
                         flag = False
                     elif value[0][0] and value[1][0]:
-                        samples0 = self.sample_value(value[0][1], value[0][2])
-                        samples1 = self.sample_value(value[1][1], value[1][2])
+                        samples0 = self.sample_value(value[0][1][0], value[0][1][1])
+                        samples1 = self.sample_value(value[1][1][0], value[1][1][1])
                         samples_ = list(zip(samples0, samples1))
                         temp["{}_{}".format(index, key)] = samples_
                         flag = False
                     else:
                         pass
+                else:
+                    pass
         self.random_variables_samples[label] = temp
         return flag
             
@@ -201,31 +205,33 @@ class Sampler(object):
         temp = {}
         for key in params:
             value = params[key]
-            if type(value) == "tuple":
+            if value.__class__.__name__ == "tuple":
                 # its scalar
                 if value[0]:
-                    samples = self.sample_value(value[1], value[2])
+                    samples = self.sample_value(value[1][0], value[1][1])
                     temp[key] = samples
                     flag = False
-            else:
+            elif value.__class__.__name__ == "tuple":
                 if value[0][0] and not value[1][0]:
-                    samples = self.sample_value(value[0][1], value[0][2])
+                    samples = self.sample_value(value[0][1][0], value[0][1][1])
                     samples_ = [(k, value[1][1]) for k in samples]
                     temp[key] = samples_
                     flag = False
                 elif not value[0][0] and  value[1][0]:
-                    samples = self.sample_value(value[1][1], value[1][2])
+                    samples = self.sample_value(value[1][1][0], value[1][1][1])
                     samples_ = [(value[0][1], k) for k in samples]
                     temp[key] = samples_
                     flag = False
                 elif value[0][0] and value[1][0]:
-                    samples0 = self.sample_value(value[0][1], value[0][2])
-                    samples1 = self.sample_value(value[1][1], value[1][2])
+                    samples0 = self.sample_value(value[0][1][0], value[0][1][1])
+                    samples1 = self.sample_value(value[1][1][0], value[1][1][1])
                     samples_ = list(zip(samples0, samples1))
                     temp[key] = samples_
                     flag = False
                 else:
                     pass
+            else:
+                pass
         self.random_variables_samples[label] = temp
         return flag
     
@@ -233,16 +239,16 @@ class Sampler(object):
         # TODO make it generic
         samples = [1]*self.num_samples
         if distribution == "Uniform":
-            low = params["low"]
-            high = params["high"]
+            low = params["low"][1]
+            high = params["high"][1]
             samples = np.random.uniform(low, high, self.num_samples).tolist()
         elif distribution == "Discrete-Uniform":
-            low = params["low"]
-            high = params["high"]
+            low = params["low"][1]
+            high = params["high"][1]
             samples = np.random.randint(low, high, self.num_samples).tolist()
         elif distribution == "Gaussian":
-            mue = params["mue"]
-            sigma = params["sigma"]
+            mue = params["mue"][1]
+            sigma = params["sigma"][1]
             samples = np.random.normal(mue, sigma, self.num_samples).tolist()
         else:
             assert False, "Distribution type {} not supported yet".format(distribution)
