@@ -1,6 +1,6 @@
 import warnings
 from decimal import *
-from worker.simuator.pydyn.protection import EventInjector
+from worker.simulator.pydyn.protection import EventInjector
 getcontext().prec = 6
 
 class Executor(object):

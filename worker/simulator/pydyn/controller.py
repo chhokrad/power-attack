@@ -11,7 +11,7 @@ Parses, initialises and solves a dynamic controller model file (*.dyn)
 
 """
 
-import worker.simuator.pydyn.explicit_blocks as blocks
+import worker.simulator.pydyn.explicit_blocks as blocks
 import numpy as np
 
 class controller:

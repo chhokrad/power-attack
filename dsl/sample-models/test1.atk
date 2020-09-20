@@ -1,13 +1,13 @@
 Begin setup phase
     Case : '/Users/ajaychhokra/projects/power-attack/dsl/sample-models/case.39.py'
-    Setup breaker @ branch between bus 109 and bus 11 with { 'tto' : 1, 'ttc' : (1,10) },
-    Setup breaker @ branch between bus 109 and bus 12 with { 'tto' : 1 }, 
-    Setup distance relay @ branch between bus 10 and bus 11 with { 'z1_thresh' : (1, 100)},
-    Setup over-current relay @ branch between bus 11 and bus 23 with { 'o1_thresh' : 34.45 , 'o2_thresh' : 45.78 },
-    Setup lfc in generator @ bus 1 with { 'max_droop' : 78.98 },
-    Setup generator @ bus 12 with {'inertia' : 90.98, 'reactance' : 89},
-    Setup simulation with { 'time' : 10, 'max iterations' : (Uniform, {'low' : 10, 'high' : 90}) } ,
-    Setup trace of bus voltages, power flows, load-loss
+    Configure breaker @ branch between bus 109 and bus 11 with { 'tto' : 1, 'ttc' : (1,10) },
+    Configure breaker @ branch between bus 109 and bus 12 with { 'tto' : 1 }, 
+    Configure distance relay @ branch between bus 10 and bus 11 with { 'z1_thresh' : (1, 100)},
+    Configure over-current relay @ branch between bus 11 and bus 23 with { 'o1_thresh' : 34.45 , 'o2_thresh' : 45.78 },
+    Configure lfc in generator @ bus 1 with { 'max_droop' : 78.98 },
+    Configure generator @ bus 12 with {'inertia' : 90.98, 'reactance' : 89},
+    Configure simulation with { 'time' : 10, 'max iterations' : (Uniform, {'low' : 10, 'high' : 90}) } ,
+    Configure trace of bus voltages, power flows, load-loss
 End setup phase
 
 Begin preconditions

@@ -53,7 +53,7 @@ Case_file:
 ;
 
 Setup_config:
-    'Setup ' (Breaker_config | Relay_config | Controller_config | Tracer_config | Simulator_config | Generator_config)
+    'Configure' (Breaker_config | Relay_config | Controller_config | Tracer_config | Simulator_config | Generator_config)
 ;
 
 Breaker_config:

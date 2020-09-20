@@ -10,9 +10,9 @@ Time-domain simulation engine
 
 """
 from decimal import *
-from worker.simuator.pydyn.interface import init_interfaces
-from worker.simuator.pydyn.mod_Ybus import mod_Ybus
-from worker.simuator.pydyn.version import pydyn_ver
+from worker.simulator.pydyn.interface import init_interfaces
+from worker.simulator.pydyn.mod_Ybus import mod_Ybus
+from worker.simulator.pydyn.version import pydyn_ver
 
 from scipy.sparse.linalg import splu
 import numpy as np
