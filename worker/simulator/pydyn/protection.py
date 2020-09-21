@@ -300,7 +300,7 @@ class OverloadProtection(Relay):
 
 class Breaker(object):
     def __init__(self, label, sampling_interval, tto, ttc, branch_id):
-        self.label = label+'_BR'
+        self.label = label
         self.branch_id = branch_id
         self.ticks_tto = int(tto/sampling_interval)
         self.ticks_ttc = int(ttc/sampling_interval)
@@ -353,19 +353,39 @@ class EventInjector(object):
         self.ticks_to_fire = []
         self.ports_to_be_updated = [[]]
         
-    
-    def add_events(self, list_of_events, protection_devices, simulation_step):
+    def get_device_label(self, event):
+        label = 'PA_'
+        if event['equipment'] == 'relay':
+            if event['kind'] == 'distance':
+                label += 'DR_'
+            elif event['kind'] == 'over-current':
+                label += 'OR_'
+            else:
+                pass
+        elif event['equipment'] == 'breaker':
+            label += 'BR_'
+        label += '{}_{}'.format(event['from_bus'], event['to_bus'])
+        return label
+
+
+    def add_events(self, list_of_events, protection_devices, simulation_step, pseudo_bus_map):
         device_dict = {device.label :  device for device in protection_devices}
-        list_of_events = sorted(list_to_be_sorted, key=lambda k: k['time'])
+        list_of_events = sorted(list_of_events, key=lambda k: k['time'])
         previous_time = 0
+        self.ports_to_be_updated = [[]]
         for event in list_of_events:
-            self.ticks_to_fire.append(ticks)
-            device_label = event['value']['label']
-            kind = event['value']['kind']
-            port_label = label + '_{}'.format(kind)
+            # ticks = event['time'][1]/simulation_step
+            # self.ticks_to_fire.append(ticks)
+            
+            # port label for event injector is device label + type
+            device_label = self.get_device_label(event)
+            port = event["type"].upper()
+            port = port.replace(' ', '_')
+            port_label = device_label + "_{}".format(port)
             self.ports.update({ port_label: False})
-            self.add_connection(port_label, device_dict['label'], kind)
-            delta_time = event['time'] - previous_time
+            self.add_connection(port_label, device_dict[device_label], port)
+            delta_time = event['time'][1] - previous_time
+            previous_time = event['time'][1] 
             if delta_time > 0 :
                 ticks = int(delta_time/simulation_step)
                 self.ticks_to_fire.append(ticks)
@@ -377,10 +397,9 @@ class EventInjector(object):
             
     def add_connection(self, internal_port, external_device, dst_internal_port):
         # This is a one to many connection 
-        # from protection the connection will flow to all elements with the dst_internal port
         if isinstance(external_device, InstantaneousElement) or \
             isinstance(external_device, Breaker):
-            if dst_internal_label in external_device.ports.keys():
+            if dst_internal_port in external_device.ports.keys():
                 self.port_mappings[internal_port].append([external_device, dst_internal_port])
 
         elif isinstance(external_device, Relay):

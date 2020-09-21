@@ -57,7 +57,7 @@ class Sampler(object):
             if flag:
                 params_list_copy = deepcopy(self.params_list)
                 for params in params_list_copy:
-                    params['sceanrio'] = scenario
+                    params['scenario'] = scenario
                 self.params_list_with_scenario[scenario_label] = params_list_copy
             else:
                 params_list_copy = []

@@ -25,10 +25,10 @@ End preconditions
 
 Begin attack scenarios
     Scenario1 : <   Attack lfc in generator @ bus 11 with scaling attack of 1 @ time 3.50,
-                    Attack distance relay @ branch between bus 12 and bus 43 with spurious attack @ time 9.45,
-                    Attack breaker @ branch between bus 34 and bus 454 with stuck open attack  @ time 9    > ,
+                    Attack distance relay @ branch between bus 16 and bus 21 with spurious attack @ time 9.45,
+                    Attack breaker @ branch between bus 21 and bus 22 with stuck open attack  @ time 9    > ,
     
-    Scenario2 : <   Attack lfc in generator @ bus 11 with biasing attack of (Gaussian, {'mue':1.8, 'sigma':0.1}) @ time 4,
-                    Attack over-current relay @ branch between bus 12 and bus 43 with spurious attack @ time 7.45,
-                    Attack breaker @ branch between bus 45 and bus 454 with stuck close attack  @ time 9    >
+    Scenario2 : <   Attack lfc in generator @ bus 11 with biasing attack of 2 @ time 4,
+                    Attack over-current relay @ branch between bus 16 and bus 21 with spurious attack @ time 7.45,
+                    Attack breaker @ branch between bus 21 and bus 22 with stuck close attack  @ time 9    >
 End attack scenarios

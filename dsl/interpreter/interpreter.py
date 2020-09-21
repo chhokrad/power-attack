@@ -162,7 +162,7 @@ class Interpreter(object):
         elif type == "Breaker_attack":
             element = self.get_breaker_attack(attack.element)
         elif type == "Relay_attack":
-            selement = self.get_relay_attack(attack.element)
+            element = self.get_relay_attack(attack.element)
         else:
             warnings.warn("Ignoring attack type {}".format(type))
         event.update(element)
@@ -173,6 +173,7 @@ class Interpreter(object):
         event['bus'] = element.id.id
         event['type'] = element.type
         event['factor'] = self.extract_value(element.factor)
+        event['equipment'] = 'generator'
         return event
 
     def get_relay_attack(self, element):
@@ -181,6 +182,7 @@ class Interpreter(object):
         event['from_bus'] = element.id.from_bus.id
         event['kind'] = element.kind
         event['type'] = element.type
+        event['equipment'] = 'relay'
         return event
 
     def get_breaker_attack(self, element):
@@ -188,6 +190,7 @@ class Interpreter(object):
         event['to_bus'] = element.id.to_bus.id
         event['from_bus'] = element.id.from_bus.id
         event['type'] = element.type
+        event['equipment'] = 'breaker'
         return event
 
     def extract_value(self, val):
@@ -228,22 +231,22 @@ if __name__ == "__main__":
     power_attack_interpreter.parse_sample_model(
         sample_model="/Users/ajaychhokra/projects/power-attack/dsl/sample-models/test1.atk")
     pp = pprint.PrettyPrinter(depth=4)
-    pp.pprint(power_attack_interpreter.breaker_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.relay_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.controller_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.params['Tracer'])
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.simulation_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.generator_params)
-    print("-"*150)
-    pp.pprint(power_attack_interpreter.preconditions)
+    # pp.pprint(power_attack_interpreter.breaker_params)
+    # print("-"*150)
+    # pp.pprint(power_attack_interpreter.relay_params)
+    # print("-"*150)
+    # pp.pprint(power_attack_interpreter.controller_params)
+    # print("-"*150)
+    # pp.pprint(power_attack_interpreter.params['Tracer'])
+    # print("-"*150)
+    # pp.pprint(power_attack_interpreter.simulation_params)
+    # print("-"*150)
+    # pp.pprint(power_attack_interpreter.generator_params)
+    # print("-"*150)
+    # pp.pprint(power_attack_interpreter.preconditions)
     print("-"*150)
     pp.pprint(power_attack_interpreter.attack_scenarios)
     print("-"*150)
-    pp.pprint(power_attack_interpreter.params['ppc'])
+    # pp.pprint(power_attack_interpreter.params['ppc'])
 
 

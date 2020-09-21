@@ -30,6 +30,7 @@ import os
 class SimulatorPyDyn(object):
     def __init__(self, params, id):
         self.params = params
+        self.branch_pseudo_bus_map = {}
         self.dynopt = {}
         self.branch_pseudo_bus_map = {}
         self.id = id
@@ -247,6 +248,8 @@ class SimulatorPyDyn(object):
                 to_bus = int(self.ppc['branch'][branch_id, T_BUS])
                 from_bus = int(self.ppc['branch'][branch_id, F_BUS])
                 if self.ppc['bus'][to_bus-1, BASE_KV] == self.ppc['bus'][from_bus-1, BASE_KV]:
+                    if branch_id in self.branch_pseudo_bus_map.keys():
+                        print(branch_id)
                     param_d1 = self.get_distance_relay_params(
                         from_bus, to_bus, branch_id)
                     D1 = DistanceProtection(**param_d1)
@@ -289,8 +292,11 @@ class SimulatorPyDyn(object):
 
         # Create Events file for physical events (Include precondition and attack scenarios)
         attack_sequence = []
-        if "attack scenario" in self.params.keys():
-            attack_sequence = self.params["attack_scenario"]
+        try :
+            attack_sequence = self.params["scenario"]
+        except :
+            pass
+
 
         # attack sequence is a sequence where each component is
         # an attack can be a scaling and biasing attack : Generator Attack
@@ -299,9 +305,9 @@ class SimulatorPyDyn(object):
         generator_attack = []
         protection_system_attack = []
         for attack in attack_sequence:
-            if attack['type'] == "Relay" or attack['type'] == "Breaker":
+            if attack['equipment'] == "relay" or attack['equipment'] == "breaker":
                 protection_system_attack.append(attack)
-            else:
+            elif attack['equipment'] == "generator":
                 generator_attack.append(attack)
 
         if len(generator_attack) > 0:
@@ -310,7 +316,8 @@ class SimulatorPyDyn(object):
         if len(protection_system_attack) > 0:
             event_injector = EventInjector()
             event_injector.add_events(
-                protection_system_attack, protection_devices, self.dynopt['h'])
+                protection_system_attack, protection_devices, self.dynopt['h'], 
+                self.branch_pseudo_bus_map)
             protection_devices.insert(0, event_injector)
 
         self.ps_executor = Executor(protection_devices)
@@ -325,10 +332,8 @@ class SimulatorPyDyn(object):
             for event in self.event_list:
                 if event["type"] == "LOAD":
                     # 1.0, LOAD, 0, 80, 30
-                    eventfile.write("{}, LOAD, {}, {}, {}".format(event["time"],
-                                                                  event["value"]["bus"],
-                                                                  event["value"]["Pd"],
-                                                                  event["value"]["Qd"]))
+                    eventfile.write("{}, LOAD, {}, 0, 0".format(event["time"][1],
+                                                                  event["bus"]))
                 elif event["type"] == "FAULT":
                     #1.0, FAULT, 16, 0.5, 0.5
                     # TODO Need better internal numbering mechanism
@@ -337,7 +342,7 @@ class SimulatorPyDyn(object):
                     eventfile.write("{}, FAULT, {}, {}, {}".format(event["time"],
                                                                    bus, 0, 0))
 
-                elif event["type"] == "SCALE":
+                elif event["type"] == "scaling":
                     # 160.0, SIGNAL, freq_ctrl0, attack_bias, 0.01
                     n_gen = self.ppc['gen'].shape[0]
                     gen_no = None
@@ -347,12 +352,12 @@ class SimulatorPyDyn(object):
                             break
                     if n_gen is not None:
                         eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_scale, {}".format(
-                            event["time"],
+                            event["time"][1],
                             gen_no,
-                            event["value"]
+                            event["factor"][1]
                         ))
 
-                elif event["type"] == "BIAS":
+                elif event["type"] == "biasing":
                     n_gen = self.ppc['gen'].shape[0]
                     gen_no = None
                     for n in range(n_gen):
@@ -361,9 +366,9 @@ class SimulatorPyDyn(object):
                             break
                     if n_gen is not None:
                         eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_bias, {}".format(
-                            event["time"],
+                            event["time"][1],
                             gen_no,
-                            event["value"]
+                            event["factor"][1]
                         ))
 
                 else:

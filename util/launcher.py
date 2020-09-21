@@ -13,9 +13,10 @@ from time import sleep
 
 
 NUM_CORES = multiprocessing.cpu_count()
-pp = pprint.PrettyPrinter(depth=2)
+pp = pprint.PrettyPrinter(depth=3)
 
 def start_simulation(args, id):
+    # pp.pprint(args)
     sim = SimulatorPyDyn(args, id)
     sim.setup_and_run()
 
