@@ -15,9 +15,9 @@ from time import sleep
 NUM_CORES = multiprocessing.cpu_count()
 pp = pprint.PrettyPrinter(depth=2)
 
-def start_simulation(args):
-    sim = SimulatorPyDyn(args)
-    # sim.setup_and_run()
+def start_simulation(args, id):
+    sim = SimulatorPyDyn(args, id)
+    sim.setup_and_run()
 
 
 def main(args):
@@ -41,12 +41,13 @@ def main(args):
         pass
     else:
         # run locally
-        configs = []
-        for scenario in power_attack_sampler.params_list_with_scenario:
-            for params_dict in power_attack_sampler.params_list_with_scenario[scenario]:
-                configs.append(params_dict)
-        worker_pool = Pool(args.num_processes)
-        worker_pool.map(start_simulation, configs)
+        # configs = []
+        # for scenario in power_attack_sampler.params_list_with_scenario:
+        #     for params_dict in power_attack_sampler.params_list_with_scenario[scenario]:
+        #         configs.append(params_dict)
+        # worker_pool = Pool(args.num_processes)
+        # worker_pool.map(start_simulation, configs)
+        start_simulation(power_attack_sampler.params_list_with_scenario["Scenario1"][0], "test123")
 
 
 

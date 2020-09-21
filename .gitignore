@@ -136,3 +136,6 @@ dmypy.json
 
 # PNG files
 *.png
+
+# Controller definitions
+worker/artifacts

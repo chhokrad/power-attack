@@ -1,27 +1,34 @@
 Begin setup phase
-    Case : '/Users/ajaychhokra/projects/power-attack/dsl/sample-models/case.39.py'
-    Configure breaker @ branch between bus 109 and bus 11 with { 'tto' : 1, 'ttc' : (1,10) },
-    Configure breaker @ branch between bus 109 and bus 12 with { 'tto' : 1 }, 
-    Configure distance relay @ branch between bus 10 and bus 11 with { 'z1_thresh' : (1, 100)},
-    Configure over-current relay @ branch between bus 11 and bus 23 with { 'o1_thresh' : 34.45 , 'o2_thresh' : 45.78 },
-    Configure lfc in generator @ bus 1 with { 'max_droop' : 78.98 },
-    Configure generator @ bus 12 with {'inertia' : 90.98, 'reactance' : 89},
-    Configure simulation with { 'time' : 10, 'max iterations' : (Uniform, {'low' : 10, 'high' : 90}) } ,
-    Configure trace of bus voltages, power flows, load-loss
+    Case : '/Users/ajaychhokra/projects/power-attack/grid-models/case39.py'
+    Configure simulation with { 't_sim' : 30, 'max_iter' : 50, 'h': 0.001} ,
+    Configure trace of bus voltages, power flows, load-loss,
+    Configure generator @ bus 30 with {'inertia' : 500},
+    Configure generator @ bus 31 with {'inertia' : 30.30},
+    Configure generator @ bus 32 with {'inertia' : 35.80},
+    Configure generator @ bus 33 with {'inertia' : 38.60},
+    Configure generator @ bus 34 with {'inertia' : 26},
+    Configure generator @ bus 35 with {'inertia' : 34.80},
+    Configure generator @ bus 36 with {'inertia' : 26.40},
+    Configure generator @ bus 37 with {'inertia' : 24.30},
+    Configure generator @ bus 38 with {'inertia' : 34.50},
+    Configure generator @ bus 39 with {'inertia' : 42}
+
+
+
 End setup phase
 
 Begin preconditions
-    Change load on bus 11 to (100, 43.78) @ time 90,
-    Trip branch between bus 11 and bus 98 @ time 90,
-    Inject fault in bus 45 @ time  ((Gaussian, {"mue" : 10, "sigma" : 0.9}), 10)
+    Change load on bus 11 to (100, 43.78) @ time 5,
+    Trip branch between bus 11 and bus 98 @ time 7,
+    Inject fault in branch between bus 16 and bus 21 @ time  8
 End preconditions
 
 Begin attack scenarios
-    Sceanrio1 : <   Attack lfc in generator @ bus 11 with scaling attack of 1 @ time 10.98,
-                    Attack distance relay @ branch between bus 12 and bus 43 with spurious attack @ time 87.45,
-                    Attack breaker @ branch between bus 34 and bus 454 with stuck open attack  @ time 90    > ,
+    Scenario1 : <   Attack lfc in generator @ bus 11 with scaling attack of 1 @ time 3.50,
+                    Attack distance relay @ branch between bus 12 and bus 43 with spurious attack @ time 9.45,
+                    Attack breaker @ branch between bus 34 and bus 454 with stuck open attack  @ time 9    > ,
     
-    Sceanrio2 : <   Attack lfc in generator @ bus 11 with biasing attack of (Gaussian, {'mue':18, 'sigma':1}) @ time 10.98,
-                    Attack over-current relay @ branch between bus 12 and bus 43 with spurious attack @ time 87.45,
-                    Attack breaker @ branch between bus 45 and bus 454 with stuck close attack  @ time 90    >
+    Scenario2 : <   Attack lfc in generator @ bus 11 with biasing attack of (Gaussian, {'mue':1.8, 'sigma':0.1}) @ time 4,
+                    Attack over-current relay @ branch between bus 12 and bus 43 with spurious attack @ time 7.45,
+                    Attack breaker @ branch between bus 45 and bus 454 with stuck close attack  @ time 9    >
 End attack scenarios

@@ -1,6 +1,6 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 
-from pypower import loadcase
+from pypower.loadcase import loadcase
 from textx import metamodel_from_file
 import warnings
 import pprint
@@ -217,29 +217,33 @@ class Interpreter(object):
     def parse_sample_model(self, sample_model):
         self.sample_model = self.meta_model.model_from_file(sample_model)
         # TODO check if the file exists through object processors
-        # self.ppc = loadcase(self.sample_model.case_file.case_file)
+        self.params['ppc'] = loadcase(self.sample_model.case_file.case_file)
         self.get_setup_config()
         self.get_preconditions()
         self.get_attack_scenarios()
 
-# if __name__ == "__main__":
-#     power_attack_interpreter = Interpreter(meta_model="../grammar/attack.tx")
-#     power_attack_interpreter.parse_sample_model(sample_model="../sample-models/test.atk")
-#     pp = pprint.PrettyPrinter(depth=4)
-#     pp.pprint(power_attack_interpreter.breaker_params)
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.relay_params)
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.controller_params)
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.params['Tracer'])
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.simulation_params)
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.generator_params)
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.preconditions)
-#     print("-"*150)
-#     pp.pprint(power_attack_interpreter.attack_scenarios)
+if __name__ == "__main__":
+    power_attack_interpreter = Interpreter(
+        meta_model="/Users/ajaychhokra/projects/power-attack/dsl/grammar/attack.tx")
+    power_attack_interpreter.parse_sample_model(
+        sample_model="/Users/ajaychhokra/projects/power-attack/dsl/sample-models/test1.atk")
+    pp = pprint.PrettyPrinter(depth=4)
+    pp.pprint(power_attack_interpreter.breaker_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.relay_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.controller_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.params['Tracer'])
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.simulation_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.generator_params)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.preconditions)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.attack_scenarios)
+    print("-"*150)
+    pp.pprint(power_attack_interpreter.params['ppc'])
 
 

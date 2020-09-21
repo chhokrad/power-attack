@@ -68,7 +68,7 @@ class TimeDelayedElement(InstantaneousElement):
     def __init__(self, label, ppc, sampling_interval, delay):
         super().__init__(label, ppc, sampling_interval)
         self.delay = delay
-        assert sampling_interval >= delay, "delay cannot be smaller than sampling interval"
+        assert sampling_interval < delay, "delay cannot be smaller than sampling interval"
         self.delay_ticks = int(delay/sampling_interval)
         self.tick_counter = 0
 
@@ -116,16 +116,19 @@ class InstantaneousBusElement(InstantaneousElement):
     def __init__(self, label, ppc, sampling_interval, bus_id):
         # TODO parameter type checking
         super().__init__(label, ppc, sampling_interval)
-        self.bus_idx = bus_id
+        self.bus_idx = bus_id 
+        self.bus_id = bus_id - 1 # internal
 
 class InstantaneousBranchElement(InstantaneousElement):
     def __init__(self, label, ppc, sampling_interval, to_bus, from_bus, branch_id):
         # TODO parameter type checking
         super().__init__(label, ppc, sampling_interval)
-        self.to_bus_idx = to_bus
-        self.from_bus_idx = from_bus
-        self.to_bus_BaseKV = ppc['bus'][to_bus, BASE_KV]
-        self.from_bus_BaseKV = ppc['bus'][from_bus, BASE_KV]
+        self.to_bus_idx = to_bus 
+        self.to_bus = to_bus - 1 # internal
+        self.from_bus_idx = from_bus 
+        self.from_bus = from_bus - 1 # interbal
+        self.to_bus_BaseKV = ppc['bus'][self.to_bus, BASE_KV]
+        self.from_bus_BaseKV = ppc['bus'][self.from_bus, BASE_KV]
         r = ppc['branch'][branch_id, BR_R]
         x = ppc['branch'][branch_id, BR_X]
         ys = 1/np.complex(r, x)
@@ -133,7 +136,9 @@ class InstantaneousBranchElement(InstantaneousElement):
         jbc_by_2 = np.complex(0, b/2)
         theta_shift = ppc['branch'][branch_id, SHIFT]
         tau = ppc['branch'][branch_id, TAP]
-        self.Y_br = np.zeros((2, 2))
+        if tau == 0:
+            tau = 1
+        self.Y_br = np.zeros((2, 2), dtype=complex)
         self.Y_br[0][0] = (ys + jbc_by_2) * (1/tau**2)
         self.Y_br[0][1] = (-ys / (tau * np.exp(np.complex(0, -theta_shift))))
         self.Y_br[1][0] = (-ys / (tau * np.exp(np.complex(0, theta_shift))))
@@ -142,7 +147,8 @@ class InstantaneousBranchElement(InstantaneousElement):
 class TimeDelayedBusElement(TimeDelayedElement):
     def __init__(self, label, ppc, sampling_interval, delay, bus_id):
         super().__init__(label, ppc, sampling_interval, delay)
-        self.bus_idx = bus_id
+        self.bus_idx = bus_id 
+        self.bus_id =  bus_id - 1 # internal
 
 class TimeDelayedBranchElement(TimeDelayedElement):
     def __init__(self, label, ppc, sampling_interval, delay, to_bus, from_bus, branch_id):
@@ -152,10 +158,12 @@ class TimeDelayedBranchElement(TimeDelayedElement):
         Y_br =  [ [(ys + jbc/2) * 1/tau^2, -ys * (1/(tau * e^(-j*theta)))],
                   [-ys * (1/(tau * e^(j*theta))), ys + jbc/2] ]
         '''
-        self.to_bus_idx = to_bus
-        self.from_bus_idx = from_bus
-        self.to_bus_BaseKV = ppc['bus'][to_bus, BASE_KV]
-        self.from_bus_BaseKV = ppc['bus'][from_bus, BASE_KV]
+        self.to_bus_idx = to_bus 
+        self.to_bus = to_bus - 1 # internal
+        self.from_bus_idx = from_bus 
+        self.from_bus =  from_bus - 1 # internal
+        self.to_bus_BaseKV = ppc['bus'][self.to_bus, BASE_KV]
+        self.from_bus_BaseKV = ppc['bus'][self.from_bus, BASE_KV]
         r = ppc['branch'][branch_id, BR_R]
         x = ppc['branch'][branch_id, BR_X]
         ys = 1/np.complex(r,x)
@@ -163,7 +171,9 @@ class TimeDelayedBranchElement(TimeDelayedElement):
         jbc_by_2 = np.complex(0,b/2)
         theta_shift = ppc['branch'][branch_id, SHIFT]
         tau = ppc['branch'][branch_id, TAP]
-        self.Y_br = np.zeros((2,2))
+        if tau == 0:
+            tau = 1
+        self.Y_br = np.zeros((2,2), dtype=complex)
         self.Y_br[0][0] = (ys + jbc_by_2) * (1/tau**2)
         self.Y_br[0][1] = (-ys / (tau * np.exp(np.complex(0,-theta_shift))))
         self.Y_br[1][0] = (-ys / (tau * np.exp(np.complex(0, theta_shift))))
@@ -231,7 +241,7 @@ class Relay(object):
         self.elements = []
         self.sampling_interval = sampling_interval
 
-    def add_connection(self, src_element_label, internal_port, external_object, dst_element_label, dst_internal_port):
+    def add_connection(self, src_element_label, internal_port, external_object, dst_element_label=None, dst_internal_port=None):
         for src_element in self.elements:
             if src_element.label == src_element_label:
                 if isinstance(external_object, Relay):
@@ -240,7 +250,7 @@ class Relay(object):
                             src_element_label.add_connection(
                                 internal_port, dst_element, dst_internal_port)
                 elif isinstance(external_object, Breaker):
-                    src_element_label.add_connection(internal_port, external_object, dst_internal_port)
+                    src_element.add_connection(internal_port, external_object, dst_internal_port)
     
     def step(self, vprev, events):
         next_invocation = []

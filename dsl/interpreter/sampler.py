@@ -49,6 +49,7 @@ class Sampler(object):
                                             "generator": a4[i],
                                             "simulation": a5[i],
                                             "preconditions": a6[i]})
+                self.params_list[i].update(self.params)
         # TODO this is difficult to understand and should be re-factored
         for scenario_label in self.attack_scenarios:
             scenario = self.attack_scenarios[scenario_label]
@@ -84,7 +85,7 @@ class Sampler(object):
         if len(random_vars) > 0:
             for key in random_vars:
                 for index in range(len(space)):
-                    sapce[index][key] = random_vars[key][index]
+                    space[index][key] = random_vars[key][index]
         return space
 
 

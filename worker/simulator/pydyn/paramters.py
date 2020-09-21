@@ -1,7 +1,16 @@
+import os
+from pathlib import Path
+
+file_path = os.path.abspath(__file__)
+dir = Path(file_path).parents[2]
+art_dir = os.path.join(dir, 'artifacts')
+if not os.path.isdir(art_dir):
+    os.makedirs(art_dir)
+
 default_params = {
+"artifacts": art_dir,
 "dynamic_simulation_parameters": {
 
-    "case" : "case39",
     'h' : 0.001,
     'sample_period' : 0.01,
     't_sim' : 10,
@@ -12,9 +21,15 @@ default_params = {
     'speed_volt' : True,
     'iopt' : 'runge_kutta'},
 
+'header': '''
+
+##########################
+# define the signals
+''',
+
 'freq_ctr_filename': 'freq_ctrlith.dyn',
     
-    'signals_ctrl_gen': '''
+'signals_ctrl_gen': '''
 
 Pm_ref = REF()
 omega_ref = REF()
@@ -25,7 +40,9 @@ Omega = REF()
 Omega_local = REF()
 
 ''',
-    'ctrl_dyn': '''
+    
+    
+'ctrl_dyn': '''
 
 call_func = INT_FUNC(update_ctrl.freq)
 Omega_nom = INT(Omega_dot, K, 1)
@@ -35,7 +52,8 @@ Pm_tot = SUM(Pm_ref, u)
 Pm = OUTPUT(Pm_tot, GENx)
 
 ''',
-    'initialization': ''''
+    
+'initialization': '''
 
 ##################
 # Initialisation #
@@ -52,7 +70,8 @@ SIGNAL = attack_bias = CONST(0.0)
 SIGNAL = max_droop = CONST(max_droop**)
 
 ''',
-    'input_ctrl': '''
+    
+'input_ctrl': '''
 
 # frequency in the generator
 gen = INPUT(gen, sys_matrices)
@@ -61,5 +80,22 @@ omega_error = SUM(omega_ref, -omega)
 
 # Control variables
 
-'''
+''',
+
+'z1_thresh' : 24,
+'z2_thresh' : 25,
+'z3_thresh' : 26,
+'z2_delay'  : 0.1,
+'z3_delay'  : 1.5,
+'relay_sampling_interval' : 0.008,
+'i1_thresh' : 200,
+'i2_thresh' : 400,
+'i3_thresh' : 600,
+'i1_delay'  : 300,
+'i2_delay'  : 600,
+'i3_delay'  : 1200,
+'breaker_sampling_interval' : 0.004,
+'tto'   : 0.090,
+'ttc'   : 0.090
+
 }

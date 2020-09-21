@@ -28,10 +28,15 @@ import os
 
 
 class SimulatorPyDyn(object):
-    def __init__(self, params):
+    def __init__(self, params, id):
         self.params = params
         self.dynopt = {}
         self.branch_pseudo_bus_map = {}
+        self.id = id
+        self.artifacts_dir = os.path.join(default_params["artifacts"],
+                                        str(self.id))
+        if not os.path.isdir(self.artifacts_dir):
+            os.makedirs(self.artifacts_dir)
 
     def get_distance_relay_params(self, from_bus, to_bus, branch_id):
         params = {}
@@ -44,24 +49,24 @@ class SimulatorPyDyn(object):
         for i in [1, 2, 3]:
             try:
                 params['z{}_thresh'.format(
-                    i)] = self.params['protection_system']['PA_DR_{}_{}'.format(
-                        from_bus, to_bus)]['z{}_thresh'.format(i)]
+                    i)] = self.params['relay']['PA_DR_{}_{}_z{}_thresh'.format(
+                        from_bus, to_bus,i)][1]
             except KeyError:
                 params['z{}_thresh'.format(
                     i)] = default_params['z{}_thresh'.format(i)]
             if i > 1:
                 try:
                     params['z{}_delay'.format(
-                        i)] = self.params['protection_system']['PA_DR_{}_{}'.format(
-                            from_bus, to_bus)]['z{}_delay'.format(i)]
+                        i)] = self.params['relay']['PA_DR_{}_{}_z{}_delay'.format(
+                            from_bus, to_bus,i)][1]
                 except KeyError:
                     params['z{}_delay'.format(
                         i)] = default_params['z{}_delay'.format(i)]
         try:
-            params['sampling_interval'] = self.params['protection_system']['PA_DR_{}_{}'.format(
-                from_bus, to_bus)]['sampling_interval']
-        except expression as identifier:
-            params['sampling_interval'] = default_params['distance_relay_sampling_interval']
+            params['sampling_interval'] = self.params['relay']['PA_DR_{}_{}_sampling_interval'.format(
+                from_bus, to_bus)][1]
+        except KeyError:
+            params['sampling_interval'] = default_params['relay_sampling_interval']
 
         return params
 
@@ -75,56 +80,66 @@ class SimulatorPyDyn(object):
 
         for i in [1, 2, 3]:
             try:
-                params['o{}_thresh'.format(
-                    i)] = self.params['protection_system']['PA_OR_{}_{}'.format(
-                        from_bus, to_bus)]['o{}_thresh'.format(i)]
+                params['i{}_thresh'.format(
+                    i)] = self.params['relay']['PA_OR_{}_{}_i{}_thresh'.format(
+                        from_bus, to_bus, i)][1]
             except KeyError:
-                params['o{}_thresh'.format(
-                    i)] = default_params['o{}_thresh'.format(i)]
+                params['i{}_thresh'.format(
+                    i)] = default_params['i{}_thresh'.format(i)]
 
             try:
-                params['o{}_delay'.format(
-                    i)] = self.params['protection_system']['PA_OR_{}_{}'.format(
-                        from_bus, to_bus)]['o{}_delay'.format(i)]
+                params['i{}_delay'.format(
+                    i)] = self.params['relay']['PA_OR_{}_{}_i{}_delay'.format(
+                        from_bus, to_bus, i)][1]
             except KeyError:
-                params['o{}_delay'.format(
-                    i)] = default_params['o{}_delay'.format(i)]
+                params['i{}_delay'.format(
+                    i)] = default_params['i{}_delay'.format(i)]
         try:
-            params['sampling_interval'] = self.params['protection_system']['PA_OR_{}_{}'.format(
-                from_bus, to_bus)]['sampling_interval']
-        except expression as identifier:
-            params['sampling_interval'] = default_params['overload_relay_sampling_interval']
+            params['sampling_interval'] = self.params['relay']['PA_OR_{}_{}_sampling_interval'.format(
+                from_bus, to_bus)][1]
+        except KeyError:
+            params['sampling_interval'] = default_params['relay_sampling_interval']
 
         return params
 
-    def get_breaker_params(self, from_bus, branch_id):
+    def get_breaker_params(self, from_bus, to_bus, branch_id):
         params = {}
         params['branch_id'] = branch_id
-        params['to_bus'] = to_bus
-        params['from_bus'] = from_bus
+        # params['to_bus'] = to_bus
+        # params['from_bus'] = from_bus
         params['label'] = 'PA_BR_{}_{}'.format(from_bus, to_bus)
 
         try:
-            params['tto'] = self.params['protection_system']['PA_BR_{}_{}'.format(
-                from_bus, to_bus)]['tto']
+            params['tto'] = self.params['breaker']['PA_BR_{}_{}_tto'.format(
+                from_bus, to_bus)]['tto'][1]
         except KeyError:
             params['tto'] = default_params['tto']
 
         try:
-            params['ttc'] = self.params['protection_system']['PA_BR_{}_{}'.format(
-                from_bus, to_bus)]['ttc']
+            params['ttc'] = self.params['breaker']['PA_BR_{}_{}_ttc'.format(
+                from_bus, to_bus)]['ttc'][1]
         except KeyError:
             params['ttc'] = default_params['ttc']
 
         try:
-            params['sampling_interval'] = self.params['protection_system']['PA_BR_{}_{}'.format(
-                from_bus, to_bus)]['sampling_interval']
-        except expression as identifier:
+            params['sampling_interval'] = self.params['breaker']['PA_BR_{}_{}_sampling_interval'.format(
+                from_bus, to_bus)][1]
+        except KeyError:
             params['sampling_interval'] = default_params['breaker_sampling_interval']
 
         return params
 
-    def add_pseudo_buses(self, branch_ids):
+    def add_pseudo_buses(self, branches):
+        branch_ids = []
+        for branch in branches:
+            for index in range(self.ppc['branch'].shape[0]):
+                if (self.ppc['branch'][index, F_BUS] == branch[0] and \
+                    self.ppc['branch'][index, T_BUS] == branch[1]) or \
+                    (self.ppc['branch'][index, F_BUS] == branch[1] and
+                     self.ppc['branch'][index, T_BUS] == branch[0]):
+                    branch_ids.append(index)
+                    break
+        assert len(branches) == len(branch_ids), "Missing one pseudo bud"
         for branch_id in branch_ids:
             branch_data = self.ppc['branch'][branch_id, :]
             to_bus = int(branch_data[T_BUS])  # external numbering
@@ -159,12 +174,14 @@ class SimulatorPyDyn(object):
         node_id = [str(int(x-1)) for x in self.ppc['bus'][:, 0]]
         gen_id = [str(int(x-1)) for x in self.ppc['gen'][:, 0]]
 
-        dest_dir = default_params['temporary_directory']
-        H = default_params['H']
+        gen_bus_ids = [int(x) for x in self.ppc['gen'][:, 0]]
+        dest_dir = default_params['artifacts']
+        H = [self.params["generator"]["GEN_{}_inertia".format(id)][1] for id in gen_bus_ids]
         alpha = [1.0 for x in H]
         k_consensus = [1/.16 for x in H]
         d_droop = [.05 for x in H]
 
+        header = default_params['header']
         file_name_i = default_params['freq_ctr_filename']
         signals_ctrl_gen = default_params['signals_ctrl_gen']
         ctrl_dyn = default_params['ctrl_dyn']
@@ -184,43 +201,49 @@ class SimulatorPyDyn(object):
             sec_ctrl_i = signals_ctrl_gen.replace(
                 'x', str(i)) + input_ctrl_i + ctrl_dyn.replace('GENx', 'GEN'+str(i))
             file_name = os.path.join(
-                dest_dir, file_name_i.replace('ith', str(i)))
+                self.artifacts_dir, file_name_i.replace('ith', str(i)))
             # file_name = dest_dir + '/' + file_name_i.replace('ith', str(i))
             with open(file_name, 'w') as f:
                 f.write(id_label)
                 f.write(header)
+                # print("-*-"*50)
+                # print(sec_ctrl_i)
                 f.write(sec_ctrl_i)
+                # print("=#="*50)
+                # print(init)
                 f.write(init)
 
     def setup(self):
-        simulation_parameters = self.params['dynamic_simulation_parameters'] 
+        simulation_parameters = self.params['simulation'].keys() 
         for param in default_params['dynamic_simulation_parameters']:
-            if param in simulation_parameters:
-                self.dynopt[param] = simulation_parameters[param]
+            param_label = "SIM_{}".format(param)
+            if param_label in simulation_parameters:
+                self.dynopt[param] = self.params['simulation'][param_label][1]
             else:
                 self.dynopt[param] = default_params['dynamic_simulation_parameters'][param]
         
         # Configuration parameters
-        self.ppc = loadcase(self.dynopt['case'])
+        self.ppc = self.params['ppc']
         # Setting up frequency controllers
-        self.generate_frequency_controllers(self.ppc)
+        self.generate_frequency_controllers()
         # Store preconditions in a list
-        self.event_list = self.params['precondition']
+        self.event_list = self.params['preconditions']
         # precondition key's value is a list  where each elememt is a dictionary
         # keys are time, type, value
         # value is an dictionary that is specific to the event type
         pseudo_buses_to_be_added = []
         for event in self.event_list:
-            if 'FAULT' in event:
-                pseudo_buses_to_be_added.append(event['value']['branch'])
-        self.add_pseudo_buses(pseudo_buses_to_be_added)
+            if event['type'] == 'FAULT' and event['node_type'] == 'Branch_type':
+                pseudo_buses_to_be_added.append((event['from_bus'], event['to_bus']))
+        if len(pseudo_buses_to_be_added) > 0:
+            self.add_pseudo_buses(pseudo_buses_to_be_added)
         # Set up protection system with default settings
 
         protection_devices = []
 
         for branch_id in range(0, len(self.ppc['branch'])):
             # check if its a transmission line
-            if self.ppc['branch'][branch_id, BR_B] != 0 or self.ppc['branch'][branch_id, BR_R] != 0:
+            if self.ppc['branch'][branch_id, TAP] == 0 :
                 to_bus = int(self.ppc['branch'][branch_id, T_BUS])
                 from_bus = int(self.ppc['branch'][branch_id, F_BUS])
                 if self.ppc['bus'][to_bus-1, BASE_KV] == self.ppc['bus'][from_bus-1, BASE_KV]:
@@ -296,7 +319,7 @@ class SimulatorPyDyn(object):
         # Only supported events here are LOAD, FAULT, SIGNAL
         # event list with time
         self.event_list = sorted(self.event_list, key=lambda k: k['time'])
-        dest_dir = default_params['temporary_directory']
+        dest_dir = self.artifacts_dir
         event_file = os.path.join(dest_dir, 'event.evnt')
         with open(event_file, 'w') as eventfile:
             for event in self.event_list:
@@ -365,5 +388,5 @@ class SimulatorPyDyn(object):
 
     def setup_and_run(self):
         self.setup()
-        run_sim(self.ppc, self.elements, self.dynopt,
-                self.events, self.tracer, self.ps_executor)
+        # run_sim(self.ppc, self.elements, self.dynopt,
+                # self.events, self.tracer, self.ps_executor)
