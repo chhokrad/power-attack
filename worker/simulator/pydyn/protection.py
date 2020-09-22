@@ -245,9 +245,9 @@ class Relay(object):
         for src_element in self.elements:
             if src_element.label == src_element_label:
                 if isinstance(external_object, Relay):
-                    for dst_element in external_object:
+                    for dst_element in external_object.elements:
                         if dst_element.label == dst_element_label:
-                            src_element_label.add_connection(
+                            src_element.add_connection(
                                 internal_port, dst_element, dst_internal_port)
                 elif isinstance(external_object, Breaker):
                     src_element.add_connection(internal_port, external_object, dst_internal_port)
@@ -306,37 +306,65 @@ class Breaker(object):
         self.ticks_ttc = int(ttc/sampling_interval)
         self.tick_counter = 0
         self.current_state = "CLOSED"
-        self.ports = {"CMD_OPEN": False, "CMD_CLOSE": False}
+        self.ports = {  "CMD_OPEN": False, "CMD_CLOSE": False,
+                        "STUCK_CLOSE": False, "STUCK_OPEN": False }
         self.sampling_interval = sampling_interval
 
     def step(self, vprev, events):
         if (self.current_state == "CLOSED"):
-            if (self.ports["CMD_OPEN"]):
-                self.ports["CMD_OPEN"] = False
-                self.current_state = "OPENING"
-                self.tick_counter = 0
+            if (self.ports["STUCK_CLOSE"]):
+                self.current_state = "STUCK_CLOSE"
+                self.ports["STUCK_CLOSE"] = False
+            
+            else:
+                if (self.ports["CMD_OPEN"]):
+                    self.ports["CMD_OPEN"] = False
+                    self.current_state = "OPENING"
+                    self.tick_counter = 0
+        
+        elif (self.current_state == "STUCK_CLOSE"):
+            pass
 
         elif (self.current_state == "OPENING"):
-            if (self.tick_counter >= self.ticks_tto):
-                self.current_state = "OPEN"
-                self.tick_counter = 0
-                events.event_stack.append(
-                    [self.time, "TRIP_BRANCH", self.branch_id])
+            if (self.ports["STUCK_CLOSE"]):
+                self.current_state = "STUCK_CLOSE"
+                self.ports["STUCK_CLOSE"] = False
             else:
-                self.tick_counter += 1
+
+                if (self.tick_counter >= self.ticks_tto):
+                    self.current_state = "OPEN"
+                    self.tick_counter = 0
+                    events.event_stack.append(
+                        [self.time, "TRIP_BRANCH", self.branch_id])
+                else:
+                    self.tick_counter += 1
 
         elif (self.current_state == "OPEN"):
-            if (self.ports["CMD_CLOSE"]):
-                self.current_state = "CLOSING"
-                self.ports["CMD_CLOSE"] = False
-                self.tick_counter = 0
-        else:
-            if (self.tick_counter >= self.ticks_ttc):
-                self.current_state = "CLOSED"
-                self.tick_counter = 0
-                # TODO Implement CONNECT_BUS
+            if (self.ports["STUCK_OPEN"]):
+                self.current_state = "STUCK_OPEN"
+                self.ports["STUCK_OPEN"] = False
+            
             else:
-                self.tick_counter += 1
+                if (self.ports["CMD_CLOSE"]):
+                    self.current_state = "CLOSING"
+                    self.ports["CMD_CLOSE"] = False
+                    self.tick_counter = 0
+        
+        elif (self.current_state == "STUCK_OPEN"):
+            pass
+        
+        else:
+            if (self.ports["STUCK_OPEN"]):
+                self.current_state = "STUCK_OPEN"
+                self.ports["STUCK_OPEN"] = False
+
+            else:
+                if (self.tick_counter >= self.ticks_ttc):
+                    self.current_state = "CLOSED"
+                    self.tick_counter = 0
+                    # TODO Implement CONNECT_BUS
+                else:
+                    self.tick_counter += 1
 
         return self.sampling_interval
 
@@ -348,12 +376,13 @@ class Breaker(object):
 
 class EventInjector(object):
     def __init__(self):
+        self.label = "Injector Machine"
         self.ports = {}
         self.port_mappings = defaultdict(list)
         self.ticks_to_fire = []
         self.ports_to_be_updated = [[]]
         
-    def get_device_label(self, event):
+    def get_device_label(self, event, pseudo_bus_map):
         label = 'PA_'
         if event['equipment'] == 'relay':
             if event['kind'] == 'distance':
@@ -364,12 +393,15 @@ class EventInjector(object):
                 pass
         elif event['equipment'] == 'breaker':
             label += 'BR_'
+        if (event["from_bus"], event["to_bus"]) in pseudo_bus_map.keys():
+            event["to_bus"] = pseudo_bus_map[(
+                event["from_bus"], event["to_bus"])]
         label += '{}_{}'.format(event['from_bus'], event['to_bus'])
         return label
 
 
-    def add_events(self, list_of_events, protection_devices, simulation_step, pseudo_bus_map):
-        device_dict = {device.label :  device for device in protection_devices}
+    def add_events(self, list_of_events, device_dict, simulation_step, pseudo_bus_map):
+        # device_dict = {device.label :  device for device in protection_devices}
         list_of_events = sorted(list_of_events, key=lambda k: k['time'])
         previous_time = 0
         self.ports_to_be_updated = [[]]
@@ -378,7 +410,7 @@ class EventInjector(object):
             # self.ticks_to_fire.append(ticks)
             
             # port label for event injector is device label + type
-            device_label = self.get_device_label(event)
+            device_label = self.get_device_label(event, pseudo_bus_map)
             port = event["type"].upper()
             port = port.replace(' ', '_')
             port_label = device_label + "_{}".format(port)

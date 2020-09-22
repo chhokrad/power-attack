@@ -82,6 +82,58 @@ omega_error = SUM(omega_ref, -omega)
 
 ''',
 
+    'sync.dyn': '''
+
+ID = SYNC1
+
+#########################
+# Controller Definition #
+#########################
+
+omega1 = INPUT(omega,GEN1)
+omega2 = INPUT(omega,GEN2)
+
+omega_error = SUM(omega1, -omega2)
+
+
+Vang5 = INPUT(Va4,bus)
+Vang7 = INPUT(Va6,bus)
+
+Vang_error = SUM(Vang5, -Vang7)
+
+
+Vm5 = INPUT(Vm4,bus)
+Vm7 = INPUT(Vm6,bus)
+
+Vm_error = SUM(Vm5, -Vm7)
+
+
+t = INT(k, 1, 1)
+N_events = REF()
+
+
+sync = FUNC(sync.in_sync, omega1, omega2, Vm5, Vm7, Vang5, Vang7, t, N_events)
+
+event = EVENT(sync, ENABLE_BRANCH, 7)
+event = EVENT(sync, SIGNAL, AVR1, select, 1.0)
+event = EVENT(sync, SIGNAL, AVR2, select, 1.0)
+N_events = SUM(N_events, -event)
+
+
+
+
+
+
+##################
+# Initialisation #
+##################
+
+INIT
+SIGNAL = omega_ref = CONST(1.0)
+SIGNAL = k = CONST(1.0)
+SIGNAL = N_events = CONST(0.0)
+    ''',
+
 'z1_thresh' : 24,
 'z2_thresh' : 25,
 'z3_thresh' : 26,

@@ -164,15 +164,16 @@ class SimulatorPyDyn(object):
             self.branch_pseudo_bus_map[(from_bus, to_bus)] = new_bus_id
             self.branch_pseudo_bus_map[(to_bus, from_bus)] = new_bus_id
             self.partial_line_list.extend([(from_bus, new_bus_id),
-                                           (new_bus_id, to_bus)])
+                                           (to_bus, new_bus_id)])
             self.partial_line_pairs.append([(from_bus, new_bus_id),
-                                            (new_bus_id, to_bus)])
+                                            (to_bus, new_bus_id)])
             branch_data[BR_R] = branch_data[BR_R]/2
             branch_data[BR_X] = branch_data[BR_X]/2
             branch_data[BR_B] = branch_data[BR_B]/2
             new_branch_data = deepcopy(branch_data)
             branch_data[T_BUS] = new_bus_id
-            new_branch_data[F_BUS] = new_bus_id
+            new_branch_data[T_BUS] = new_bus_id
+            new_branch_data[F_BUS] = to_bus
             self.ppc['branch'] = np.vstack(
                 [self.ppc['branch'], new_branch_data])
 
@@ -309,16 +310,19 @@ class SimulatorPyDyn(object):
                         D2.add_connection(
                             "PA_DR_{}_{}_Z1", "TRIP_SEND", D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
                         protection_devices.extend([D2, O2, B2])
-                    
-                    for pair in self.partial_line_pairs:
-                        D1_label = "PA_DR_{}_{}".format(pair[0][0], pair[0][1])
-                        D2_label = "PA_DR_{}_{}".format(pair[1][0], pair[1][1])
-                        D1 = self.protection_device_dict[D1_label]
-                        D2 = self.protection_device_dict[D2_label]
-                        D1.add_connection(
-                            "{}_Z1".format(D1_label), "TRIP_SEND", D2, "{}_Z2".format(D2_label), "TRIP_RECIEVE")
-                        D2.add_connection(
-                            "{}_Z1".format(D2_label), "TRIP_SEND", D1, "{}_Z2".format(D1_label), "TRIP_RECIEVE")
+                    else:
+                        print("Not creating relay opposite of {}".format(
+                            param_d1['label']))
+
+        for pair in self.partial_line_pairs:
+            D1_label = "PA_DR_{}_{}".format(pair[0][0], pair[0][1])
+            D2_label = "PA_DR_{}_{}".format(pair[1][0], pair[1][1])
+            D1 = self.protection_device_dict[D1_label]
+            D2 = self.protection_device_dict[D2_label]
+            D1.add_connection(
+                "{}_Z1".format(D1_label), "TRIP_SEND", D2, "{}_Z2".format(D2_label), "TRIP_RECIEVE")
+            D2.add_connection(
+                "{}_Z1".format(D2_label), "TRIP_SEND", D1, "{}_Z2".format(D1_label), "TRIP_RECIEVE")
 
                         
 
@@ -348,7 +352,7 @@ class SimulatorPyDyn(object):
         if len(protection_system_attack) > 0:
             event_injector = EventInjector()
             event_injector.add_events(
-                protection_system_attack, protection_devices, self.dynopt['h'], 
+                protection_system_attack, self.protection_device_dict, self.dynopt['h'], 
                 self.branch_pseudo_bus_map)
             protection_devices.insert(0, event_injector)
 
@@ -358,32 +362,50 @@ class SimulatorPyDyn(object):
         # Only supported events here are LOAD, FAULT, SIGNAL
         # event list with time
         self.event_list = sorted(self.event_list, key=lambda k: k['time'])
-        dest_dir = self.artifacts_dir
-        event_file = os.path.join(dest_dir, 'event.evnt')
+        # dest_dir = self.artifacts_dir
+        event_file = os.path.join(self.artifacts_dir, 'event.evnt')
         with open(event_file, 'w') as eventfile:
             for event in self.event_list:
                 if event["type"] == "LOAD":
                     # 1.0, LOAD, 0, 80, 30
-                    eventfile.write("{}, LOAD, {}, 0, 0".format(event["time"][1],
-                                                                  event["bus"]))
+                    eventfile.write("{}, LOAD, {}, {}, {}\n".format(event["time"][1],
+                                                                  event["bus"] - 1,
+                                                                  event['value'][0][1],
+                                                                  event['value'][1][1]))
                 elif event["type"] == "FAULT":
                     #1.0, FAULT, 16, 0.5, 0.5
                     # TODO Need better internal numbering mechanism
-                    bus = self.branch_pseudo_bus_map[event["value"]
-                                                     ["branch"]] - 1
-                    eventfile.write("{}, FAULT, {}, {}, {}".format(event["time"],
-                                                                   bus, 0, 0))
+                    bus_int = None
+                    if event["node_type"] == "Branch_type":
+                        from_bus = event["from_bus"]
+                        to_bus = event["to_bus"]
+                        try:
+                            bus = self.branch_pseudo_bus_map[(from_bus, to_bus)]
+                        except:
+                            try:
+                                bus = self.branch_pseudo_bus_map[(to_bus, from_bus)]
+                            except:
+                                assert False, \
+                                    "Cannot inject fault in this line  between buses {} and {}".format(from_bus, to_bus)
+                        bus_int = bus - 1
+                    elif event["node_type"] == "Bus_type":
+                        bus_int = event["bus"] - 1
+                    else:
+                        assert False, "Dont recognize node type {}".format(event["node_type"])
+
+                    eventfile.write("{}, FAULT, {}, {}, {}\n".format(event["time"][1],
+                                                                   bus_int, 0, 0))
 
                 elif event["type"] == "scaling":
                     # 160.0, SIGNAL, freq_ctrl0, attack_bias, 0.01
                     n_gen = self.ppc['gen'].shape[0]
                     gen_no = None
                     for n in range(n_gen):
-                        if self.ppc['gen'][n, 0] == event["value"]["bus"]:
-                            n_gen = n
+                        if self.ppc['gen'][n, 0] == event["bus"]:
+                            gen_no = n
                             break
-                    if n_gen is not None:
-                        eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_scale, {}".format(
+                    if gen_no is not None:
+                        eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_scale, {}\n".format(
                             event["time"][1],
                             gen_no,
                             event["factor"][1]
@@ -393,11 +415,11 @@ class SimulatorPyDyn(object):
                     n_gen = self.ppc['gen'].shape[0]
                     gen_no = None
                     for n in range(n_gen):
-                        if self.ppc['gen'][n, 0] == event["value"]["bus"]:
-                            n_gen = n
+                        if self.ppc['gen'][n, 0] == event["bus"]:
+                            gen_no = n
                             break
                     if n_gen is not None:
-                        eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_bias, {}".format(
+                        eventfile.write("{}, SIGNAL, freq_ctrl{}, attack_bias, {}\n".format(
                             event["time"][1],
                             gen_no,
                             event["factor"][1]
@@ -405,20 +427,28 @@ class SimulatorPyDyn(object):
 
                 else:
                     warnings.warn(
-                        "Event {} not supported as of now".format(event["type"]))
+                        "Event {} not implemented as of now".format(event["type"]))
 
             eventfile.close()
 
         self.elements = {}
+        
         for i in range(n_gen):
             #G_i = sym_order6b('Generator'+ str(i) +'.mach', dynopt)
-            G_i = ext_grid('GEN'+str(i), i, 0.1198, H[i], self.dynopt)
+            inertia = self.params['generator']['GEN_{}_inertia'.format(int(self.ppc["gen"][i, 0]))][1]
+            G_i = ext_grid('GEN'+str(i), i, 0.1198, inertia, self.dynopt)
             self.elements[G_i.id] = G_i
-            freq_ctrl_i = controller('freq_ctrl' + str(i) + '.dyn', self.dynopt)
+            path = os.path.join(self.artifacts_dir, 'freq_ctrl{}.dyn'.format(i))
+            freq_ctrl_i = controller(path, self.dynopt)
             self.elements[freq_ctrl_i.id] = freq_ctrl_i
 
         # TODO correct path to sync.dyn
-        sync1 = controller('sync.dyn', dynopt)
+        sync_file = os.path.join(self.artifacts_dir, 'sync.dyn')
+        with open(sync_file, 'w') as syncfile:
+            syncfile.write(default_params['sync.dyn'])
+            syncfile.close()
+
+        sync1 = controller(sync_file, self.dynopt)
         self.elements[sync1.id] = sync1
         self.events = events(event_file)
 
