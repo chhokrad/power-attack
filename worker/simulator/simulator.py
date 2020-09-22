@@ -33,6 +33,9 @@ class SimulatorPyDyn(object):
         self.branch_pseudo_bus_map = {}
         self.dynopt = {}
         self.branch_pseudo_bus_map = {}
+        self.partial_line_list = []
+        self.partial_line_pairs = []
+        self.protection_device_dict = {}
         self.id = id
         self.artifacts_dir = os.path.join(default_params["artifacts"],
                                         str(self.id))
@@ -158,7 +161,12 @@ class SimulatorPyDyn(object):
             for idx in [PD, QD, GS, BS]:
                 new_bus_data[idx] = 0
             self.ppc['bus'] = np.vstack([self.ppc['bus'], new_bus_data])
-            self.branch_pseudo_bus_map[branch_id] = new_bus_id
+            self.branch_pseudo_bus_map[(from_bus, to_bus)] = new_bus_id
+            self.branch_pseudo_bus_map[(to_bus, from_bus)] = new_bus_id
+            self.partial_line_list.extend([(from_bus, new_bus_id),
+                                           (new_bus_id, to_bus)])
+            self.partial_line_pairs.append([(from_bus, new_bus_id),
+                                            (new_bus_id, to_bus)])
             branch_data[BR_R] = branch_data[BR_R]/2
             branch_data[BR_X] = branch_data[BR_X]/2
             branch_data[BR_B] = branch_data[BR_B]/2
@@ -253,42 +261,66 @@ class SimulatorPyDyn(object):
                     param_d1 = self.get_distance_relay_params(
                         from_bus, to_bus, branch_id)
                     D1 = DistanceProtection(**param_d1)
-
-                    param_d2 = self.get_distance_relay_params(
-                        to_bus, from_bus, branch_id)
-                    D2 = DistanceProtection(**param_d2)
+                    self.protection_device_dict[param_d1['label']] = D1
 
                     param_o1 = self.get_overload_relay_params(
                         from_bus, to_bus, branch_id)
                     O1 = OverloadProtection(**param_o1)
-
-                    param_o2 = self.get_overload_relay_params(
-                        to_bus, from_bus, branch_id)
-                    O2 = OverloadProtection(**param_o2)
+                    self.protection_device_dict[param_o1['label']] = O1
 
                     param_b1 = self.get_breaker_params(
                         from_bus, to_bus, branch_id)
                     B1 = Breaker(**param_b1)
-
-                    param_b2 = self.get_breaker_params(
-                        to_bus, from_bus, branch_id)
-                    B2 = Breaker(**param_b2)
+                    self.protection_device_dict[param_b1['label']] = B1
 
                     for i in [1, 2, 3]:
                         D1.add_connection("PA_DR_{}_{}_Z{}".format(
                             from_bus, to_bus, i), "CMD_OPEN", B1)
                         O1.add_connection("PA_OR_{}_{}_O{}".format(
                             from_bus, to_bus, i), "CMD_OPEN", B1)
-                        D2.add_connection("PA_DR_{}_{}_Z{}".format(
-                            to_bus, from_bus, i), "CMD_OPEN", B2)
-                        O2.add_connection("PA_OR_{}_{}_O{}".format(
-                            to_bus, from_bus, i), "CMD_OPEN", B2)
+                    protection_devices.extend([D1, O1, B1])
+                    
+                    if not (from_bus, to_bus) in self.partial_line_list:
+                        param_d2 = self.get_distance_relay_params(
+                            to_bus, from_bus, branch_id)
+                        D2 = DistanceProtection(**param_d2)
+                        self.protection_device_dict[param_d2['label']] = D2
 
-                    D1.add_connection(
-                        "PA_DR_{}_{}_Z1", "TRIP_SEND", D2, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
-                    D2.add_connection(
-                        "PA_DR_{}_{}_Z1", "TRIP_SEND", D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
-                    protection_devices.extend([D1, D2, O1, O2, B1, B2])
+                        
+                        param_o2 = self.get_overload_relay_params(
+                            to_bus, from_bus, branch_id)
+                        O2 = OverloadProtection(**param_o2)
+                        self.protection_device_dict[param_o2['label']] = O2
+
+                        
+                        param_b2 = self.get_breaker_params(
+                            to_bus, from_bus, branch_id)
+                        B2 = Breaker(**param_b2)
+                        self.protection_device_dict[param_b2['label']] = B2
+
+                        for i in [1, 2, 3]:
+                            D2.add_connection("PA_DR_{}_{}_Z{}".format(
+                                to_bus, from_bus, i), "CMD_OPEN", B2)
+                            O2.add_connection("PA_OR_{}_{}_O{}".format(
+                                to_bus, from_bus, i), "CMD_OPEN", B2)
+
+                        D1.add_connection(
+                            "PA_DR_{}_{}_Z1", "TRIP_SEND", D2, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
+                        D2.add_connection(
+                            "PA_DR_{}_{}_Z1", "TRIP_SEND", D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
+                        protection_devices.extend([D2, O2, B2])
+                    
+                    for pair in self.partial_line_pairs:
+                        D1_label = "PA_DR_{}_{}".format(pair[0][0], pair[0][1])
+                        D2_label = "PA_DR_{}_{}".format(pair[1][0], pair[1][1])
+                        D1 = self.protection_device_dict[D1_label]
+                        D2 = self.protection_device_dict[D2_label]
+                        D1.add_connection(
+                            "{}_Z1".format(D1_label), "TRIP_SEND", D2, "{}_Z2".format(D2_label), "TRIP_RECIEVE")
+                        D2.add_connection(
+                            "{}_Z1".format(D2_label), "TRIP_SEND", D1, "{}_Z2".format(D1_label), "TRIP_RECIEVE")
+
+                        
 
         # Create Events file for physical events (Include precondition and attack scenarios)
         attack_sequence = []
