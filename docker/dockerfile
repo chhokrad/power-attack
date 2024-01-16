@@ -1,0 +1,7 @@
+FROM edu.vanderbilt.isis/power-attack:base
+
+COPY . ${POWER_ATTACK_REPO_SRC}
+
+WORKDIR ${POWER_ATTACK_REPO_SRC}/util
+
+ENTRYPOINT [ "python3", "launcher.py" ]

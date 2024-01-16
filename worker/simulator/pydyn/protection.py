@@ -186,8 +186,8 @@ class InstantaneousOvercurrentElement(InstantaneousBranchElement):
 
     def check_condition(self, vprev):
         V = np.zeros((2, 1))
-        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus_idx])
-        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus_idx])
+        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus])
+        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus])
         I = self.Y_br * V
         return I[0][0] > self.i_thresh
 
@@ -198,8 +198,8 @@ class TimeDelayedOvercurrentElement(TimeDelayedBranchElement):
     
     def check_condition(self, vprev):
         V = np.zeros((2, 1))
-        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus_idx])
-        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus_idx])
+        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus])
+        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus])
         I = self.Y_br * V
         return I[0][0] > self.i_thresh
 
@@ -213,8 +213,8 @@ class InstantaneousZoneElement(InstantaneousBranchElement):
     
     def check_condition(self, vprev):
         V = np.zeros((2, 1))
-        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus_idx])
-        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus_idx])
+        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus])
+        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus])
         I = self.Y_br * V
         # TODO Implement distance relay logic
         return False
@@ -229,8 +229,8 @@ class TimeDelayedZoneElement(TimeDelayedBranchElement):
     
     def check_condition(self, vprev):
         V = np.zeros((2, 1))
-        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus_idx])
-        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus_idx])
+        V[0][0] = self.to_bus_BaseKV * np.abs(vprev[self.to_bus])
+        V[1][0] = self.from_bus_BaseKV * np.abs(vprev[self.from_bus])
         I = self.Y_br * V
         # TODO Implement distance relay logic
         return False
@@ -255,7 +255,7 @@ class Relay(object):
     def step(self, vprev, events):
         next_invocation = []
         for element in self.elements:
-            next_invocation.append(element.step(vprev, elements))
+            next_invocation.append(element.step(vprev, self.elements))
         if self.sampling_interval in next_invocation:
             return self.sampling_interval
         else:
@@ -263,7 +263,7 @@ class Relay(object):
     
     def update_interfaces(self):
         for element in self.elements:
-            element.update_interfaces()
+            element.update_port_interfaces()
 
 class OverCurrentProtection(Relay):
     def __init__(self, i1_thresh, i2_thresh, i3_thresh, i2_delay, i3_delay, 

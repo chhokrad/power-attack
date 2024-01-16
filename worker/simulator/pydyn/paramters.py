@@ -44,7 +44,7 @@ Omega_local = REF()
     
 'ctrl_dyn': '''
 
-call_func = INT_FUNC(update_ctrl.freq)
+call_func = INT_FUNC(worker.simulator.pydyn.update_ctrl.freq)
 Omega_nom = INT(Omega_dot, K, 1)
 Omega_local = MULT(Omega_nom, 1)
 u = SUM(Pm_droop, Omega_local)
@@ -67,7 +67,7 @@ SIGNAL = Pm_ref = MULT(Pm0, 1)
 SIGNAL = omega_ref = CONST(1.0)
 SIGNAL = attack_scale = CONST(1.0)
 SIGNAL = attack_bias = CONST(0.0)
-SIGNAL = max_droop = CONST(max_droop**)
+#SIGNAL = max_droop = CONST(max_droop**)
 
 ''',
     
@@ -112,7 +112,7 @@ t = INT(k, 1, 1)
 N_events = REF()
 
 
-sync = FUNC(sync.in_sync, omega1, omega2, Vm5, Vm7, Vang5, Vang7, t, N_events)
+sync = FUNC(worker.simulator.sync.in_sync, omega1, omega2, Vm5, Vm7, Vang5, Vang7, t, N_events)
 
 event = EVENT(sync, ENABLE_BRANCH, 7)
 event = EVENT(sync, SIGNAL, AVR1, select, 1.0)
@@ -137,17 +137,17 @@ SIGNAL = N_events = CONST(0.0)
 'z1_thresh' : 24,
 'z2_thresh' : 25,
 'z3_thresh' : 26,
-'z2_delay'  : 0.1,
-'z3_delay'  : 1.5,
-'relay_sampling_interval' : 0.008,
+'z2_delay'  : 100,
+'z3_delay'  : 1500,
+'relay_sampling_interval' : 8,
 'i1_thresh' : 200,
 'i2_thresh' : 400,
 'i3_thresh' : 600,
 'i1_delay'  : 300,
 'i2_delay'  : 600,
 'i3_delay'  : 1200,
-'breaker_sampling_interval' : 0.004,
-'tto'   : 0.090,
-'ttc'   : 0.090
+'breaker_sampling_interval' : 4,
+'tto'   : 90,
+'ttc'   : 90
 
 }

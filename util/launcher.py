@@ -3,7 +3,7 @@
 import requests
 import argparse
 import pprint
-
+import os
 from dsl.interpreter.interpreter import Interpreter
 from dsl.interpreter.sampler import Sampler
 import multiprocessing
@@ -54,6 +54,8 @@ def main(args):
 
 
 if __name__ == "__main__":
+    repo_src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(repo_src)
     parser = argparse.ArgumentParser(description='Power-Attack CLI')
     parser.add_argument('-w', '--worker-config', 
                         help="conf. file listing collection of simulation worker end points")
@@ -62,10 +64,10 @@ if __name__ == "__main__":
                         default=10)
     parser.add_argument('-m', '--meta-model',
                         help="path to meta model or grammar",
-                        default="/Users/ajaychhokra/projects/power-attack/dsl/grammar/attack.tx")
+                        default="dsl/grammar/attack.tx")
     parser.add_argument('-s', "--sample-model",
                         help="path to sample model",
-                        default="/Users/ajaychhokra/projects/power-attack/dsl/sample-models/test1.atk")
+                        default="dsl/sample-models/test1.atk")
     parser.add_argument('-p', "--num-processes",
                         help="Number of local processes",
                         type=int,

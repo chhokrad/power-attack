@@ -37,6 +37,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
         elements    Dictionary of dynamic model objects (machines, controllers, etc) with Object ID as key
         events      Events object
         recorder    Recorder object (empty)
+        ex          Executor for protection relays and breakers
     
     Outputs:
         recorder    Recorder object (with data)
@@ -69,11 +70,20 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
     sources = []
     controllers = []
     for element in elements.values():
-        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid', 'pydyn.vsc_average', 'pydyn.asym_1cage', 'pydyn.asym_2cage']:
+        if element.__module__ in ['worker.simulator.pydyn.sym_order6a', 
+                                  'worker.simulator.pydyn.sym_order6b', 
+                                  'worker.simulator.pydyn.sym_order4', 
+                                  'worker.simulator.pydyn.ext_grid', 
+                                  'worker.simulator.pydyn.vsc_average', 
+                                  'worker.simulator.pydyn.asym_1cage', 
+                                  'worker.simulator.pydyn.asym_2cage']:
             sources.append(element)
             
-        if element.__module__ == 'pydyn.controller':
+        elif element.__module__ == 'worker.simulator.pydyn.controller':
             controllers.append(element)
+        
+        else:
+            assert False, f"Incorrect module type {element.__module__}"
     
     # Set up interfaces
     interfaces = init_interfaces(elements)
@@ -103,8 +113,8 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
         If = np.conjugate(Sf[ctr]/V_bus[f_bus])
         It = np.conjugate(St[ctr]/V_bus[t_bus])
         # print("--------Initial--------------")
-        print("Current injected into branch {} at bus {} is {}".format(ctr, f_bus+1, If))
-        print("Current injected into branch {} at bus {} is {}".format(ctr, t_bus+1, It))
+        # print("Current injected into branch {} at bus {} is {}".format(ctr, f_bus+1, If))
+        # print("Current injected into branch {} at bus {} is {}".format(ctr, t_bus+1, It))
         
 
     # Vt = results.bus(t, VM) * exp(1j * results.bus(t, VA))
@@ -186,12 +196,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
             # Interface with network equations
             v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
         
-        # Lets see currents
-        print("-------{}------".format(t*h))
-        if ex is not None:
-            events = ex.process_timestep(h, v_prev, events)
-
-
+        
         if recorder != None:
             # Record signals or states
             recorder.record_variables(t*h, elements)
@@ -216,6 +221,10 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
                 # Solve network equations
                 v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)        
         
+        print("-------{}------".format(t*h))
+        if ex is not None:
+            events = ex.process_timestep(h, v_prev, events)
+
         data.append(bus[:,BASE_KV]*np.abs(v_prev))
         time.append(t*h)
     
@@ -238,7 +247,8 @@ def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_ite
         # Update current injections for sources
         I = np.zeros(no_buses, dtype='complex')
         for source in sources:
-            if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
+            if source.__module__ in ['worker.simulator.pydyn.asym_1cage', 
+                                     'worker.simulator.pydyn.asym_2cage']:
                 # Asynchronous machine
                 source_bus = int(ppc_int['bus'][source.bus_no,0])
             else:

@@ -432,28 +432,29 @@ class SimulatorPyDyn(object):
             eventfile.close()
 
         self.elements = {}
-        
+        n_gen = self.ppc['gen'].shape[0]
         for i in range(n_gen):
             #G_i = sym_order6b('Generator'+ str(i) +'.mach', dynopt)
             inertia = self.params['generator']['GEN_{}_inertia'.format(int(self.ppc["gen"][i, 0]))][1]
             G_i = ext_grid('GEN'+str(i), i, 0.1198, inertia, self.dynopt)
             self.elements[G_i.id] = G_i
-            path = os.path.join(self.artifacts_dir, 'freq_ctrl{}.dyn'.format(i))
-            freq_ctrl_i = controller(path, self.dynopt)
-            self.elements[freq_ctrl_i.id] = freq_ctrl_i
+            # path = os.path.join(self.artifacts_dir, 'freq_ctrl{}.dyn'.format(i))
+            # freq_ctrl_i = controller(path, self.dynopt)
+            # self.elements[freq_ctrl_i.id] = freq_ctrl_i
 
         # TODO correct path to sync.dyn
-        sync_file = os.path.join(self.artifacts_dir, 'sync.dyn')
-        with open(sync_file, 'w') as syncfile:
-            syncfile.write(default_params['sync.dyn'])
-            syncfile.close()
+        # sync_file = os.path.join(self.artifacts_dir, 'sync.dyn')
+        # with open(sync_file, 'w') as syncfile:
+            # syncfile.write(default_params['sync.dyn'])
+            # syncfile.close()
 
-        sync1 = controller(sync_file, self.dynopt)
-        self.elements[sync1.id] = sync1
+        # sync1 = controller(sync_file, self.dynopt)
+        # self.elements[sync1.id] = sync1
         self.events = events(event_file)
 
 
     def setup_and_run(self):
         self.setup()
-        # run_sim(self.ppc, self.elements, self.dynopt,
-                # self.events, self.tracer, self.ps_executor)
+        # ppc, elements, dynopt = None, events = None, recorder = None, ex=None
+        run_sim(self.ppc, self.elements, self.dynopt,
+                self.events, None, self.ps_executor)

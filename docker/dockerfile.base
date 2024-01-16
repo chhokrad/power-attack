@@ -1,0 +1,13 @@
+FROM python:3.8
+
+RUN mkdir -p  /home/projects/power-attack
+
+ENV POWER_ATTACK_REPO_SRC=/home/projects/power-attack
+ENV PATH="${PATH}:/root/.local/bin"
+ENV PYTHONPATH="${POWER_ATTACK_REPO_SRC}"
+COPY requirements.txt  ${POWER_ATTACK_REPO_SRC}/requirements.txt
+
+RUN apt-get update
+RUN apt-get install cmake -y
+
+RUN pip install -r ${POWER_ATTACK_REPO_SRC}/requirements.txt --user

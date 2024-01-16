@@ -30,7 +30,14 @@ class Executor(object):
             to_be_executed.insert(0, injector)
         
         for a in to_be_executed:
-            self.next_invocation[a] = self.t + self.automata[a].step(vprev, events)
+            next_inv = self.automata[a].step(vprev, events)
+            if next_inv is None:
+                if a in self.next_invocation.keys():
+                    del self.next_invocation[a]
+                else:
+                    pass
+            else:
+                self.next_invocation[a] = self.t + next_inv
         for a in to_be_executed:
             self.automata[a].update_interfaces()
         

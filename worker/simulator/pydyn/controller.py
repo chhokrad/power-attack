@@ -13,6 +13,9 @@ Parses, initialises and solves a dynamic controller model file (*.dyn)
 
 import worker.simulator.pydyn.explicit_blocks as blocks
 import numpy as np
+import importlib
+from pdb import set_trace as bp
+
 
 class controller:
     def __init__(self, filename, dynopt):
@@ -24,6 +27,7 @@ class controller:
         self.equations = []
         self.init = []
         self.opt = dynopt['iopt']
+        self.ext_functions = {}
         
         self.parser(filename)
     
@@ -92,6 +96,11 @@ class controller:
                 yi = self.neg_token(line[3:])
                 yo = np.prod(yi)
                 
+            elif block == 'DIVIDE':
+                yi = self.neg_token(line[3:])
+                yo = yi[0] / yi[1]
+                
+
             elif block == 'CONST':
                 yo = float(line[3])
                 
@@ -111,6 +120,7 @@ class controller:
         for line in self.equations:
             signal = line[0]
             block = line[1]
+            
                        
             # Current state variable(s)
             x0 = self.states[signal]
@@ -125,10 +135,16 @@ class controller:
                 yi = self.signals[line[2]]
                 p = float(line[3])
                 yo = blocks.gain_block(yi,p)
+
+            elif block == 'DIVIDE':
+                yi = self.signals[line[2]]
+                p = float(line[3])
+                yo = blocks.divide_block(yi,p)
+
             
             elif block == 'INT':
                 yi = self.signals[line[2]]
-                p = [float(x) for x in line[3:]]
+                p = [float(x) for x in self.neg_token(line[3:])]
                 yo, x1, f = blocks.int_block(h,x0,yi,p)
             
             elif block == 'LAG':
@@ -159,11 +175,47 @@ class controller:
             
             elif block == 'WOUT':
                 yi = self.signals[line[2]]
-                p = float(line[3])
+                p = self.neg_token(line[3:])
                 yo, x1, f = blocks.wout_block(h,x0,yi,p)                
             
-            if yo:
+            elif block == 'FUNC':
+                #bp()
+                function = line[2]
+                y = []
+                for i in line[3:]:
+                    if i.isdigit():
+                        if '.' in i:
+                            x = float(i)
+                        else:
+                            x = int(i)
+                    else:
+                        x = self.signals[i]
+                    y.append(x)
+                #print(line)
+                #print(y)
+                #print('')
+                if function not in self.ext_functions.keys():
+                    func_name = function.split('.')
+                    module = importlib.import_module(func_name[0])
+                    func = getattr(module, func_name[1])
+                    self.ext_functions[function] = func
+                yo = self.ext_functions[function](y)
+
+            elif block == 'INT_FUNC':
+                function = line[2]
+                if function not in self.ext_functions.keys():
+                    mod_name, func_name = function.rsplit('.', 1)
+                    module = importlib.import_module(mod_name)
+                    func = getattr(module, func_name)
+                    self.ext_functions[function] = func
+                self.signals = self.ext_functions[function](self.id, self.signals)
+                yo = None
+
+
+            if yo is not None:
                 self.signals[signal] = yo
+                #if block == 'FUNC':
+                #    print('***'+str(yo))
             
             if x1:
                 if self.opt == 'mod_euler':

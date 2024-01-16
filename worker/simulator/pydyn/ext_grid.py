@@ -75,6 +75,7 @@ class ext_grid:
         Solve machine differential equations for the next stage in the integration step
         """
         # State variables
+        print(self.states)
         omega_0 = self.states['omega']
         delta_0 = self.states['delta']
         
