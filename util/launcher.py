@@ -36,6 +36,16 @@ def main(args):
                                     args.num_samples)
     power_attack_sampler.create_space()
     
+    num = 0
+    for scenario in power_attack_sampler.params_list_with_scenario:
+        num += len(power_attack_sampler.params_list_with_scenario[scenario])
+    
+    print("=#="*50)
+    print("number of scenario are {}".format(num))
+    print("=#="*50)
+    pp.pprint(power_attack_sampler.params_list_with_scenario)
+            
+    
     
     if args.worker_config is not None:
         # run remotely

@@ -310,9 +310,9 @@ class SimulatorPyDyn(object):
                         D2.add_connection(
                             "PA_DR_{}_{}_Z1", "TRIP_SEND", D1, "PA_DR_{}_{}_Z2", "TRIP_RECIEVE")
                         protection_devices.extend([D2, O2, B2])
-                    else:
-                        print("Not creating relay opposite of {}".format(
-                            param_d1['label']))
+                    # else:
+                    #     print("Not creating relay opposite of {}".format(
+                    #         param_d1['label']))
 
         for pair in self.partial_line_pairs:
             D1_label = "PA_DR_{}_{}".format(pair[0][0], pair[0][1])
@@ -432,28 +432,31 @@ class SimulatorPyDyn(object):
             eventfile.close()
 
         self.elements = {}
-        
+        print(self.dynopt)
         for i in range(n_gen):
             #G_i = sym_order6b('Generator'+ str(i) +'.mach', dynopt)
             inertia = self.params['generator']['GEN_{}_inertia'.format(int(self.ppc["gen"][i, 0]))][1]
+            print(inertia)
+            
             G_i = ext_grid('GEN'+str(i), i, 0.1198, inertia, self.dynopt)
             self.elements[G_i.id] = G_i
-            path = os.path.join(self.artifacts_dir, 'freq_ctrl{}.dyn'.format(i))
-            freq_ctrl_i = controller(path, self.dynopt)
-            self.elements[freq_ctrl_i.id] = freq_ctrl_i
+            # path = os.path.join(self.artifacts_dir, 'freq_ctrl{}.dyn'.format(i))
+            # freq_ctrl_i = controller(path, self.dynopt)
+            # self.elements[freq_ctrl_i.id] = freq_ctrl_i
 
         # TODO correct path to sync.dyn
-        sync_file = os.path.join(self.artifacts_dir, 'sync.dyn')
-        with open(sync_file, 'w') as syncfile:
-            syncfile.write(default_params['sync.dyn'])
-            syncfile.close()
+        # sync_file = os.path.join(self.artifacts_dir, 'sync.dyn')
+        # with open(sync_file, 'w') as syncfile:
+        #     syncfile.write(default_params['sync.dyn'])
+        #     syncfile.close()
 
-        sync1 = controller(sync_file, self.dynopt)
-        self.elements[sync1.id] = sync1
-        self.events = events(event_file)
+        # sync1 = controller(sync_file, self.dynopt)
+        # self.elements[sync1.id] = sync1
+        # self.events = events(event_file)
 
 
     def setup_and_run(self):
         self.setup()
-        # run_sim(self.ppc, self.elements, self.dynopt,
-                # self.events, self.tracer, self.ps_executor)
+        # self.ppc['bus'][29, BUS_TYPE] = 3
+        # self.ppc['bus'][32, BUS_TYPE] = 3
+        run_sim(self.ppc, self.elements, self.dynopt)

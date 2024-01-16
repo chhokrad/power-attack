@@ -17,6 +17,7 @@ from worker.simulator.pydyn.version import pydyn_ver
 from scipy.sparse.linalg import splu
 import numpy as np
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 from pypower.runpf import runpf
 from pypower.ext2int import ext2int
@@ -52,8 +53,8 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
     
     # Program options
     if dynopt:
-        h = Decimal(str(dynopt['h']))             
-        t_sim = Decimal(str(dynopt['t_sim']))           
+        h = dynopt['h']             
+        t_sim = dynopt['t_sim']      
         max_err = dynopt['max_err']        
         max_iter = dynopt['max_iter']
         verbose = dynopt['verbose']
@@ -69,10 +70,16 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
     sources = []
     controllers = []
     for element in elements.values():
-        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid', 'pydyn.vsc_average', 'pydyn.asym_1cage', 'pydyn.asym_2cage']:
+        if element.__module__ in [  'worker.simulator.pydyn.sym_order6a', 
+                                    'worker.simulator.pydyn.sym_order6b', 
+                                    'worker.simulator.pydyn.sym_order4', 
+                                    'worker.simulator.pydyn.ext_grid', 
+                                    'worker.simulator.pydyn.vsc_average', 
+                                    'worker.simulator.pydyn.asym_1cage', 
+                                    'worker.simulator.pydyn.asym_2cage']:
             sources.append(element)
             
-        if element.__module__ == 'pydyn.controller':
+        if element.__module__ == 'worker.simulator.pydyn.controller':
             controllers.append(element)
     
     # Set up interfaces
@@ -91,20 +98,20 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
     # Lets see currents
     Sf = results["branch"][:, PF] + 1j * results["branch"][:, QF]
     St = results["branch"][:, PT] + 1j * results["branch"][:, QT]
-    print(Sf)
-    print(St)
+    # print(Sf)
+    # print(St)
     V_bus = results["bus"][:, BASE_KV] * results["bus"][:, VM] * np.exp(1j * results["bus"][:, VA])
-    print(V_bus)
+    # print(V_bus)
     
     
-    for ctr in range(0, len(Sf)):
-        f_bus = int(results["branch"][ctr, F_BUS])-1
-        t_bus = int(results["branch"][ctr, T_BUS])-1
-        If = np.conjugate(Sf[ctr]/V_bus[f_bus])
-        It = np.conjugate(St[ctr]/V_bus[t_bus])
-        # print("--------Initial--------------")
-        print("Current injected into branch {} at bus {} is {}".format(ctr, f_bus+1, If))
-        print("Current injected into branch {} at bus {} is {}".format(ctr, t_bus+1, It))
+    # for ctr in range(0, len(Sf)):
+    #     f_bus = int(results["branch"][ctr, F_BUS])-1
+    #     t_bus = int(results["branch"][ctr, T_BUS])-1
+    #     If = np.conjugate(Sf[ctr]/V_bus[f_bus])
+    #     It = np.conjugate(St[ctr]/V_bus[t_bus])
+    #     # print("--------Initial--------------")
+    #     print("Current injected into branch {} at bus {} is {}".format(ctr, f_bus+1, If))
+    #     print("Current injected into branch {} at bus {} is {}".format(ctr, t_bus+1, It))
         
 
     # Vt = results.bus(t, VM) * exp(1j * results.bus(t, VA))
@@ -126,7 +133,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
     
     # Initialise sources from load flow
     for source in sources:
-        if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
+        if source.__module__ in ['worker.simulator.pydyn.asym_1cage', 'worker.simulator.pydyn.asym_2cage']:
             # Asynchronous machine
             source_bus = int(ppc_int['bus'][source.bus_no,0])
             v_source = v0[source_bus]
@@ -181,6 +188,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
         for j in range(4):
             # Solve step of differential equations
             for element in elements.values():
+                # print(element.id)
                 element.solve_step(float(h),j) 
             
             # Interface with network equations
@@ -216,14 +224,19 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None, ex=Non
                 # Solve network equations
                 v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)        
         
-        data.append(bus[:,BASE_KV]*np.abs(v_prev))
+        data.append(ppc['bus'][:, BASE_KV]*np.abs(v_prev))
         time.append(t*h)
     
     fig, ax = plt.subplots()
+    ax.set_prop_cycle(cycler('color', iter(
+        plt.cm.rainbow(np.linspace(0, 2, 2*ppc['bus'].shape[0])))))
     ax.plot(time, data)
-    ax.set(xlabel='time (s)', ylabel='voltage (kV)', title='Voltage PMU data')
-    ax.legend([1,2,3,4,5,6,7,8,9,10])
-    plt.savefig("results.png")
+    ax.set(xlabel='time (s)', ylabel='voltage (p.u)', title='Bus Voltages')
+    # plt.legend()
+    ax.legend(["BUS_{}".format(int(k)) for k in ppc['bus'][:, BUS_I]], 
+              loc='best', bbox_to_anchor=(1.05, 1),
+              fancybox=True, shadow=True, ncol=2, borderaxespad=0.)
+    fig.savefig("results.png", bbox_inches='tight')
     
     return recorder
     
@@ -238,7 +251,7 @@ def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_ite
         # Update current injections for sources
         I = np.zeros(no_buses, dtype='complex')
         for source in sources:
-            if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
+            if source.__module__ in ['worker.simulator.pydyn.asym_1cage', 'worker.simulator.pydyn.asym_2cage']:
                 # Asynchronous machine
                 source_bus = int(ppc_int['bus'][source.bus_no,0])
             else:

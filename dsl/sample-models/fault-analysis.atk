@@ -1,0 +1,27 @@
+Begin setup phase
+    Case : '/Users/ajaychhokra/projects/power-attack/dsl/sample-models/case.39.py'
+    Setup breaker @ branch between bus 109 and bus 11 with { 'tto' : (Uniform, {'mue':10, 'sigma':1}), 'ttc' : ( (Uniform, {'mue':10, 'sigma':1}), (Uniform, {'mue':10, 'sigma':1}) ) },
+    Setup breaker @ branch between bus 109 and bus 12 with { 'tto' : ( (Gaussian, {'mue':10, 'sigma':1}), (Gaussian, {'mue':10, 'sigma':1}) ) }, 
+    Setup distance relay @ branch between bus 10 and bus 11 with { 'z1_thresh' : (1, 100)},
+    Setup over-current relay @ branch between bus 11 and bus 23 with { 'o1_thresh' : 34.45 , 'o2_thresh' : 45.78 },
+    Setup lfc in generator @ bus 1 with { 'max_droop' : 78.98 },
+    Setup generator @ bus 12 with {'inertia' : 90.98, 'reactance' : 89},
+    Setup simulation with { 'time' : (Gaussian, { 'mue' : 78, 'sigma' : 5}), 'max iterations' : 90 } ,
+    Setup trace of bus voltages, power flows, load-loss
+End setup phase
+
+Begin preconditions
+    Change load on bus 11 to (100, 43.78) @ time 90,
+    Trip branch between bus 11 and bus 98 @ time 90,
+    Inject fault in bus 45 @ time 76
+End preconditions
+
+Begin attack scenarios
+    Sceanrio1 : <   Attack lfc in generator @ bus 11 with scaling attack of (Uniform, {'mue':109, 'sigma':9}) @ time 10.98,
+                    Attack distance relay @ branch between bus 12 and bus 43 with spurious attack @ time 87.45,
+                    Attack breaker @ branch between bus 34 and bus 454 with stuck open attack  @ time 90    > ,
+    
+    Sceanrio2 : <   Attack lfc in generator @ bus 11 with biasing attack of (Uniform, {'mue':109, 'sigma':9}) @ time 10.98,
+                    Attack over-current relay @ branch between bus 12 and bus 43 with spurious attack @ time 87.45,
+                    Attack breaker @ branch between bus 45 and bus 454 with stuck close attack  @ time 90    >
+End attack scenarios

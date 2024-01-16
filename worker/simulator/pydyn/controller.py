@@ -79,6 +79,7 @@ class controller:
         """
         Initialise controller
         """
+        print(self.id)
         for line in self.init:
             type = line[0]
             var = line[1]

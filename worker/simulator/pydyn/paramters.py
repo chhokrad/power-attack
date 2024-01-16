@@ -67,7 +67,7 @@ SIGNAL = Pm_ref = MULT(Pm0, 1)
 SIGNAL = omega_ref = CONST(1.0)
 SIGNAL = attack_scale = CONST(1.0)
 SIGNAL = attack_bias = CONST(0.0)
-SIGNAL = max_droop = CONST(max_droop**)
+#SIGNAL = max_droop = CONST(max_droop**)
 
 ''',
     
